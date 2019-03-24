@@ -1,5 +1,458 @@
 <html>
 	<head>
+		<!-- Fix encoding. -->
+		<meta charset="utf-8">
+		<!-- Fix document width for mobile devices. -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<style>
+			/* https://gist.github.com/MoOx/9137295 */
+			.reset-button {
+				border: none;
+				margin: 0;
+				padding: 0;
+				width: auto;
+				overflow: visible;
+				background: transparent;
+
+				/* inherit font & color from ancestor */
+				color: inherit;
+				font: inherit;
+
+				/* Normalize `line-height`. Cannot be changed from `normal` in Firefox 4+. */
+				line-height: normal;
+
+				/* Corrects font smoothing for webkit */
+				-webkit-font-smoothing: inherit;
+				-moz-osx-font-smoothing: inherit;
+
+				/* Corrects inability to style clickable `input` types in iOS */
+				-webkit-appearance: none;
+			}
+
+			/* Remove excess padding and border in Firefox 4+ */
+			.reset-button::-moz-focus-inner {
+				border: 0;
+				padding: 0;
+			}
+		</style>
+
+		<style>
+			body {
+				--gray-color: rgba(0,0,0,0.5);
+				--gray-color-light: rgba(0,0,0,0.08);
+				--gray-color-lightest: rgba(0,0,0,0.05);
+				--base-color: #2390e4;
+				--base-color-dark: #0e74c3;
+				--axes-font-size: 10px;
+				--x-axis-padding-top: 0.8em;
+				--y-axis-values-shift: 0.5em;
+				--graphics-top-overflow-border-height: 6px;
+				--graphics-top-overflow-border-margin: 6px;
+				--timeline-overlay-color: rgba(236,242,246,0.72);
+				--timeline-window-border-color: rgba(0,32,80,0.12);
+				--timeline-window-border-width: 1px;
+				--timeline-window-handle-width: 4px;
+				--timeline-canvas-vertical-padding: 2px;
+				--background-color: white;
+				--text-color: black;
+				--text-color-light: var(--gray-color);
+				--border-color: var(--gray-color-light);
+				--border-color-light: var(--gray-color-lightest);
+				--button-active-color: rgba(46,86,117,0.05);
+				--graph-tooltip-background-color: var(--background-color);
+				--night-mode-transition-time: 200ms;
+
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: space-between;
+				margin: 0;
+				font-family: sans-serif;
+				background-color: var(--background-color);
+				color: var(--text-color);
+				transition: all var(--night-mode-transition-time);
+			}
+
+			.body--night-mode {
+				--background-color: #242f3e;
+				--text-color: white;
+				--text-color-light: #546778;
+				--border-color: #344658;
+				--border-color-light: #293544;
+				--button-active-color: #344658;
+				--timeline-overlay-color: rgba(31,45,63,0.72);
+				--timeline-window-border-color: rgba(147,220,255,0.2);
+				--graph-tooltip-background-color: var(--border-color-light);
+			}
+
+			#graphics-top-margin {
+				/* Padding top added for the top-most Y axis label. */
+				padding-bottom: var(--axes-font-size);
+			}
+
+			#graphics-top-overflow-border {
+				width: 100%;
+				height: var(--graphics-top-overflow-border-height);
+				margin-bottom: var(--graphics-top-overflow-border-margin);
+				/* Gradients don't support transitions. */
+				background-image: linear-gradient(var(--background-color), transparent);
+			}
+
+			#charts {
+				width: 400px;
+				padding-left: 10px;
+				padding-right: 10px;
+			}
+
+			#charts-header {
+				margin-top: 15px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			#charts h1 {
+				margin: 0;
+				padding-left: 3px;
+				font-size: 15px;
+			}
+
+			#dataset-selector {
+				border: none;
+				outline: none;
+				color: inherit;
+				background: var(--background-color);
+				transition: all var(--night-mode-transition-time);
+			}
+
+			#graphics-with-tools {
+				/* Prevents text selection when clicking and dragging the timeline window. */
+				-webkit-user-select: none;
+				-khtml-user-select: none;
+				-moz-user-select: none;
+				-o-user-select: none;
+				user-select: none;
+			}
+
+			#graphics-container {
+				/* For tooltip. */
+				position: relative;
+			}
+
+			#graphics-container-with-bottom-padding {
+				/* Padding bottom added for the X axis labels. */
+				padding-bottom: calc(var(--x-axis-padding-top) + var(--axes-font-size));
+			}
+
+			#graphics {
+				display: flex;
+				flex-direction: column;
+				height: 200px;
+				font-size: var(--axes-font-size);
+				/* Crop graphs. */
+				/*overflow: hidden;*/
+			}
+
+			#canvas-wrapper {
+				position: relative;
+				display: flex;
+				flex: 1;
+			}
+
+			#canvas {
+				width: 100%;
+				/* Don't crop graphs on canvas edges. */
+				overflow: visible;
+				/* Crop graphs on X axis because otherwise their dangling tails would be visible. */
+				overflow-x: hidden;
+			}
+
+			#x, #y {
+				color: var(--text-color-light);
+				transition: color var(--night-mode-transition-time);
+				/* Y axis would obstruct the leftmost part of the canvas for pointermove event. */
+				pointer-events: none;
+			}
+
+			#y {
+				position: absolute;
+				left: 0;
+				bottom: var(--y-axis-values-shift);
+				height: 100%;
+				line-height: var(--axes-font-size);
+				display: flex;
+				justify-content: space-between;
+				flex-direction: column-reverse;
+			}
+
+			#y-wrapper {
+				position: absolute;
+				left: 0;
+				top: calc(-1 * var(--axes-font-size));
+				height: calc(100% + var(--axes-font-size));
+			}
+
+			#x {
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: 100%;
+				display: flex;
+				justify-content: space-between;
+				padding-top: var(--x-axis-padding-top);
+				padding-left: 0.7em;
+				padding-right: 0.7em;
+				line-height: var(--axes-font-size)
+			}
+
+			.graph {
+				stroke-width: 2px;
+				/* `vector-effect` fixes `stroke-width` to be in screen pixels. */
+				/* (instead of <svg/> `viewBox` units) */
+				/* `vector-effect` is not supported in Edge and IE. */
+				/* But for demo purposes it will suffice. */
+				/* Can be replaced with scaling `stroke-width` relative to viewport width. */
+				vector-effect: non-scaling-stroke;
+				stroke-linejoin: round;
+				stroke-linecap: round;
+				fill: none;
+			}
+
+			.grid-line {
+				stroke: var(--border-color-light);
+				transition: stroke var(--night-mode-transition-time);
+				stroke-width: 1px;
+				/* `vector-effect` fixes `stroke-width` to be in screen pixels. */
+				/* (instead of <svg/> `viewBox` units) */
+				/* `vector-effect` is not supported in Edge and IE. */
+				/* But for demo purposes it will suffice. */
+				/* Can be replaced with scaling `stroke-width` relative to viewport width. */
+				vector-effect: non-scaling-stroke;
+			}
+
+			#graph-tooltip-container {
+				position: absolute;
+				width: 100%;
+				height: calc(100% - var(--axes-font-size) - var(--graphics-top-overflow-border-height) - var(--graphics-top-overflow-border-margin));
+				margin-top: calc(var(--axes-font-size) + var(--graphics-top-overflow-border-height) + var(--graphics-top-overflow-border-margin));
+				z-index: 1;
+				/* Otherwise `pointermove` events on canvas wouldn't work. */
+				pointer-events: none;
+			}
+
+			#graph-tooltip {
+				position: absolute;
+				display: none;
+				border-radius: 4px;
+				padding-top: 4px;
+				padding-bottom: 4px;
+				padding-left: 8px;
+				padding-right: 8px;
+				box-shadow: 0 0 2px rgba(0,0,0,0.2);
+				background-color: var(--graph-tooltip-background-color);
+				transform: translateX(-50%);
+				z-index: 1;
+				white-space: nowrap;
+				/* Just in case, so that it doesnt mess with 'pointermove' event. */
+				pointer-events: none;
+			}
+
+			#graph-tooltip-date {
+				font-weight: bolder;
+				font-size: 11px;
+				text-align: center;
+				margin-bottom: 6px;
+			}
+
+			#graph-tooltip-values {
+				display: flex;
+				justify-content: center;
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+
+			#graph-tooltip-values li {
+				margin-right: 10px;
+				font-weight: bolder;
+				font-size: 13px;
+			}
+
+			#graph-tooltip-values li:last-child {
+				margin-right: 0;
+			}
+
+			.graph-tooltip-point {
+				position: absolute;
+				width: 6px;
+				height: 6px;
+				box-shadow: 0 0 0 2px currentColor;
+				border-radius: 50%;
+				background-color: var(--background-color);
+				transform: translateX(-50%) translateY(50%);
+				/* So that it doesnt mess with 'pointermove' event. */
+				pointer-events: none;
+				box-sizing: border-box;
+			}
+
+			#graph-tooltip-line {
+				stroke: var(--border-color);
+				stroke-width: 1px;
+				/* `vector-effect` fixes `stroke-width` to be in screen pixels. */
+				/* (instead of <svg/> `viewBox` units) */
+				/* `vector-effect` is not supported in Edge and IE. */
+				/* But for demo purposes it will suffice. */
+				/* Can be replaced with scaling `stroke-width` relative to viewport width. */
+				vector-effect: non-scaling-stroke;
+			}
+
+			#timeline {
+				position: relative;
+				height: 30px;
+				margin-top: 16px;
+				/* Crop timeline graph on left and right sides. */
+				overflow: hidden;
+			}
+
+			#timeline-overlay-left,
+			#timeline-overlay-right {
+				position: absolute;
+				left: 0;
+				right: 0;
+				height: 100%;
+				background-color: var(--timeline-overlay-color);
+				transition: background-color var(--night-mode-transition-time);
+			}
+
+			#timeline-window {
+				position: absolute;
+				left: 0;
+				right: 0;
+				height: 100%;
+				border: var(--timeline-window-border-width) solid var(--timeline-window-border-color);
+				transition: border-color var(--night-mode-transition-time);
+				border-left-width: 0;
+				border-right-width: 0;
+				box-sizing: border-box;
+			}
+
+			#timeline-window__left-handle,
+			#timeline-window__right-handle {
+				position: absolute;
+				width: var(--timeline-window-handle-width);
+				height: 100%;
+				background-color: var(--timeline-window-border-color);
+				cursor: col-resize;
+				transition: background-color var(--night-mode-transition-time);
+				/* Prevent the web browser from handling this touch event. */
+				/* Is supposed to be used in conjunction with `event.preventDefault()`. */
+				/* https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action */
+				touch-action: none;
+			}
+
+			#timeline-window__left-handle {
+				left: 0;
+			}
+
+			#timeline-window__right-handle {
+				right: 0;
+			}
+
+			#timeline-window {
+				cursor: grab;
+			}
+
+			#timeline-window:active {
+				cursor: grabbing;
+			}
+
+			#timeline-canvas {
+				position: absolute;
+				width: 100%;
+				height: calc(100% - 2 * var(--timeline-canvas-vertical-padding));
+				top: var(--timeline-canvas-vertical-padding);
+				/* Don't crop timeline graph on top and bottom. */
+				overflow: visible;
+			}
+
+			#timeline-canvas .graph {
+				stroke-width: 1px;
+			}
+
+			#graph-togglers {
+				display: flex;
+				flex-wrap: wrap;
+				margin-top: 15px;
+			}
+
+			.graph-toggler {
+				display: flex;
+				align-items: center;
+				height: 30px;
+				line-height: 0;
+				padding-left: 6px;
+				padding-right: 11px;
+				margin-right: 13px;
+				border-radius: 15px;
+				border: 1px solid var(--border-color);
+				font-family: inherit;
+				font-size: 14px;
+				outline: none;
+				cursor: pointer;
+				transition: border-color var(--night-mode-transition-time);
+			}
+
+			.graph-toggler:last-child {
+				margin-right: 0;
+			}
+
+			.graph-toggler:active {
+				background-color: var(--button-active-color);
+			}
+
+			.graph-toggler__check {
+				width: 17px;
+				height: 17px;
+				margin-right: 8px;
+			}
+
+			.graph-toggler__check-mark,
+			.graph-toggler__check-circle {
+				transition: transform 150ms;
+				transform-origin: center center;
+			}
+
+			.graph-toggler__check-mark {
+				transform: scale(0);
+			}
+
+			.graph-toggler__check-circle {
+				transform: scale(1);
+			}
+
+			.graph-toggler__check--checked .graph-toggler__check-mark {
+				transform: scale(1);
+			}
+
+			.graph-toggler__check--checked .graph-toggler__check-circle {
+				transform: scale(0);
+			}
+
+			#night-mode-switch {
+				margin-top: 40px;
+				margin-bottom: 25px;
+				font-size: 16px;
+				outline: none;
+				cursor: pointer;
+				color: var(--base-color);
+			}
+
+			#night-mode-switch:active {
+				color: var(--base-color-dark);
+			}
+		</style>
+
 		<script>
 			const DATA =
 			[{
@@ -169,390 +622,612 @@
 				'Nov',
 				'Dec'
 			]
+
+			const WEEKDAYS = [
+				'Sun',
+				'Mon',
+				'Tue',
+				'Wed',
+				'Thu',
+				'Fri',
+				'Sat'
+			]
 		</script>
-
-		<style>
-			/* https://gist.github.com/MoOx/9137295 */
-			.reset-button {
-				border: none;
-				margin: 0;
-				padding: 0;
-				width: auto;
-				overflow: visible;
-				background: transparent;
-
-				/* inherit font & color from ancestor */
-				color: inherit;
-				font: inherit;
-
-				/* Normalize `line-height`. Cannot be changed from `normal` in Firefox 4+. */
-				line-height: normal;
-
-				/* Corrects font smoothing for webkit */
-				-webkit-font-smoothing: inherit;
-				-moz-osx-font-smoothing: inherit;
-
-				/* Corrects inability to style clickable `input` types in iOS */
-				-webkit-appearance: none;
-			}
-
-			/* Remove excess padding and border in Firefox 4+ */
-			.reset-button::-moz-focus-inner {
-				border: 0;
-				padding: 0;
-			}
-		</style>
-
-		<style>
-			body {
-				--gray-color: rgba(0,0,0,0.5);
-				--gray-color-light: rgba(0,0,0,0.1);
-				--axes-font-size: 10px;
-				--x-axis-padding-top: 0.8em;
-				--y-axis-values-shift: 0.5em;
-				--graphics-top-overflow-border-height: 6px;
-				--graphics-top-overflow-border-margin: 6px;
-
-				--background-color: white;
-
-				margin: 0;
-				font-family: sans-serif;
-			}
-
-			#graphics-top-margin {
-				/* Padding top added for the top-most Y axis label. */
-				padding-bottom: var(--axes-font-size);
-			}
-
-			#graphics-top-overflow-border {
-				width: 100%;
-				height: var(--graphics-top-overflow-border-height);
-				margin-bottom: var(--graphics-top-overflow-border-margin);
-				background-image: linear-gradient(var(--background-color), transparent);
-			}
-
-			#charts {
-				width: 400px;
-				padding-left: 10px;
-				padding-right: 10px;
-				overflow: hidden;
-			}
-
-			#charts h1 {
-				margin: 0;
-				padding-top: 15px;
-				padding-left: 3px;
-				font-size: 15px;
-				background-color: var(--background-color);
-			}
-
-			#graphics {
-				display: flex;
-				flex-direction: column;
-				height: 200px;
-				/* Padding bottom added for the X axis labels. */
-				padding-bottom: calc(var(--x-axis-padding-top) + var(--axes-font-size));
-				font-size: var(--axes-font-size);
-			}
-
-			#canvas-wrapper {
-				position: relative;
-				display: flex;
-				flex: 1;
-			}
-
-			#canvas {
-				width: 100%;
-				/* Don't crop graphs on canvas edges. */
-				overflow: visible;
-			}
-
-			#x, #y {
-				color: var(--gray-color);
-			}
-
-			#y {
-				position: absolute;
-				left: 0;
-				bottom: var(--y-axis-values-shift);
-				height: 100%;
-				line-height: var(--axes-font-size);
-				display: flex;
-				justify-content: space-between;
-				flex-direction: column-reverse;
-			}
-
-			#y-wrapper {
-				position: absolute;
-				left: 0;
-				top: calc(-1 * var(--axes-font-size));
-				height: calc(100% + var(--axes-font-size));
-			}
-
-			#x {
-				position: absolute;
-				left: 0;
-				right: 0;
-				top: 100%;
-				display: flex;
-				justify-content: space-between;
-				padding-top: var(--x-axis-padding-top);
-				padding-left: 0.7em;
-				padding-right: 0.7em;
-				line-height: var(--axes-font-size)
-			}
-
-			.graph {
-				stroke-width: 2px;
-				/* `vector-effect` fixes `stroke-width` to be in screen pixels. */
-				/* (instead of <svg/> `viewBox` units) */
-				/* `vector-effect` is not supported in Edge and IE. */
-				/* But for demo purposes it will suffice. */
-				/* Can be replaced with scaling `stroke-width` relative to viewport width. */
-				vector-effect: non-scaling-stroke;
-				stroke-linejoin: round;
-				stroke-linecap: round;
-				fill: none;
-			}
-
-			.grid-line {
-				stroke: var(--gray-color-light);
-				stroke-width: 1px;
-				/* `vector-effect` fixes `stroke-width` to be in screen pixels. */
-				/* (instead of <svg/> `viewBox` units) */
-				/* `vector-effect` is not supported in Edge and IE. */
-				/* But for demo purposes it will suffice. */
-				/* Can be replaced with scaling `stroke-width` relative to viewport width. */
-				vector-effect: non-scaling-stroke;
-			}
-
-			#timeline {
-				position: relative;
-				height: 30px;
-				margin-top: 16px;
-			}
-
-			#timeline-overlay-left,
-			#timeline-overlay-right {
-				position: absolute;
-				left: 0;
-				right: 0;
-				height: 100%;
-				background: rgba(46,86,117,0.05);
-			}
-
-			#timeline-window {
-				position: absolute;
-				left: 0;
-				right: 0;
-				height: 100%;
-				border-left: 4px solid rgba(46,86,117,0.15);
-				border-right: 4px solid rgba(46,86,117,0.15);
-				border-top: 1px solid rgba(46,86,117,0.15);
-				border-bottom: 1px solid rgba(46,86,117,0.15);
-				box-sizing: border-box;
-			}
-
-			#timeline-canvas {
-				position: absolute;
-				width: 100%;
-				height: 100%;
-			}
-
-			#timeline-canvas .graph {
-				stroke-width: 1px;
-			}
-
-			#graph-togglers {
-				display: flex;
-				margin-top: 15px;
-			}
-
-			.graph-toggler {
-				display: flex;
-				align-items: center;
-				height: 30px;
-				line-height: 0;
-				padding-left: 6px;
-				padding-right: 11px;
-				margin-right: 13px;
-				border-radius: 15px;
-				border: 1px solid var(--gray-color-light);
-				font-family: inherit;
-				font-size: 14px;
-				outline: none;
-				cursor: pointer;
-			}
-
-			.graph-toggler:last-child {
-				margin-right: 0;
-			}
-
-			.graph-toggler:active {
-				background-color: rgba(46,86,117,0.05);
-			}
-
-			.graph-toggler__check {
-				width: 17px;
-				height: 17px;
-				margin-right: 8px;
-			}
-
-			.graph-toggler__check--checked {
-				background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOSAxOSI+PGNpcmNsZSBjeD0iOS41IiBjeT0iOS41IiByPSI5LjUiIGZpbGw9IiNBRkYxQjYiLz48cGF0aCBmaWxsPSIjM0VDRjhFIiBkPSJNMTMuNjQgNC45NGwtNi4yIDYuMzQtMS42OS0xLjljLS43My0uNjMtMS44OS4xLTEuMzYgMS4wNmwyIDMuMzhjLjMuNDMgMS4wNC44NSAxLjc4IDAgLjMyLS40MiA2LjMxLTcuOTMgNi4zMS03LjkzLjc0LS44NC0uMi0xLjU4LS44NC0uOTV6Ii8+PC9zdmc+');
-			}
-		</style>
 	</head>
 	<body>
 		<section id="charts">
-			<h1>Followers</h1>
 			<div id="graphics-with-tools">
-				<div id="graphics">
-					<div id="graphics-top-margin">
-						<div id="graphics-top-overflow-border"></div>
-					</div>
-					<div id="canvas-wrapper">
-						<svg id="canvas" preserveAspectRatio="none"></svg>
-						<div id="x"></div>
-						<div id="y-wrapper">
-							<div id="y"></div>
+				<header id="charts-header">
+					<h1>Followers</h1>
+					<select id="dataset-selector"></select>
+				</header>
+				<div id="graphics-container-with-bottom-padding">
+					<div id="graphics-container">
+						<div id="graph-tooltip-container">
+							<div id="graph-tooltip">
+								<div id="graph-tooltip-date"></div>
+								<ul id="graph-tooltip-values"></ul>
+							</div>
+						</div>
+						<div id="graphics">
+							<div id="graphics-top-margin">
+								<div id="graphics-top-overflow-border"></div>
+							</div>
+							<div id="canvas-wrapper">
+								<svg id="canvas" preserveAspectRatio="none"></svg>
+								<div id="x"></div>
+								<div id="y-wrapper">
+									<div id="y"></div>
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 				<div id="timeline">
 					<svg id="timeline-canvas" preserveAspectRatio="none"></svg>
 					<div id="timeline-overlay-left"></div>
-					<div id="timeline-window"></div>
+					<div id="timeline-window">
+						<div id="timeline-window__left-handle"></div>
+						<div id="timeline-window__right-handle"></div>
+					</div>
 					<div id="timeline-overlay-right"></div>
 				</div>
 				<div id="graph-togglers"></div>
 			</div>
 		</section>
 
+		<button id="night-mode-switch" type="button" class="reset-button"></button>
+
 		<script>
 			const GAUGE_TICK_MARKS_COUNT = 6
+			// Adds some side padding so that it doesn't trim the graphs on their sides.
+			// (empirical constant, depends on graph `stroke-width`)
+			// Breaks positioning in `event.clientX` cases.
+			const GRAPH_SIDE_PADDING = 0 // 0.005
+
 			const canvas = document.getElementById('canvas')
-			const data = DATA[0]
-			const [x, ...graphs] = data.columns
-			if (x.shift() !== 'x') {
-				throw new Error('"x" must come first')
+			const graphTooltipContainer = document.getElementById('graph-tooltip-container')
+			const xAxis = document.getElementById('x')
+			const yAxis = document.getElementById('y')
+			const graphTooltip = document.getElementById('graph-tooltip')
+			const graphTooltipDate = document.getElementById('graph-tooltip-date')
+			const graphTooltipValues = document.getElementById('graph-tooltip-values')
+			let graphTooltipLine
+			const timeline = document.getElementById('timeline')
+			const timelineOverlayLeft = document.getElementById('timeline-overlay-left')
+			const timelineWindowLeftHandle = document.getElementById('timeline-window__left-handle')
+			const timelineWindow = document.getElementById('timeline-window')
+			const timelineWindowRightHandle = document.getElementById('timeline-window__right-handle')
+			const timelineOverlayRight = document.getElementById('timeline-overlay-right')
+			const timelineCanvas = document.getElementById('timeline-canvas')
+			const nightModeSwitch = document.getElementById('night-mode-switch')
+
+			let timelineWindowFrom
+			let timelineWindowTo
+			let showGraphs
+			let showGraphsNext
+			let timelineWindowGraphs
+			let timelineWindowMinX
+			let timelineWindowMaxX
+			let timelineWindowMinY
+			let timelineWindowMaxY
+			let shiftX
+			let timelineWindowXScaled
+			let graphTooltipX
+			let graphTooltipPoints
+
+			let yScale = 1
+			let previousYScale
+
+			let selectedDatasetId = 0
+			let nightMode = false
+
+			setUpDatasetSelector()
+			setUpTimelineWindowHandle('left')
+			setUpTimelineWindowHandle('right')
+			setUpTimelineWindow()
+			setUpNightModeSwitch()
+
+			displayGraphs()
+			setUpCanvas()
+
+			function displayGraphs() {
+				showGraphs = {}
+				showGraphsNext = undefined
+				timelineWindowFrom = 0
+				timelineWindowTo = 1
+				updateTimelineWindow()
+				drawGraphs(true)
+				// Add graph togglers.
+				const graphTogglers = document.getElementById('graph-togglers')
+				clearElement(graphTogglers)
+				const data = DATA[selectedDatasetId]
+				for (const id of Object.keys(data.types)) {
+					if (data.types[id] === 'line') {
+						graphTogglers.appendChild(createGraphToggler(id, data))
+					}
+				}
+				clearElement(graphTooltipValues)
+				for (const id of Object.keys(data.types)) {
+					if (data.types[id] === 'line' && showGraphs[id] !== false) {
+						const graphTooltipValue = document.createElement('li')
+						graphTooltipValue.style.color = data.colors[id]
+						graphTooltipValues.appendChild(graphTooltipValue)
+					}
+				}
 			}
-			// Chrome can't handle timestamps in milliseconds for point coordinates (draws nothing).
-			// Reducing timestamps to lower numbers to work around that bug.
-			const shiftX = x[0]
-			const xScaled = x.map(_ => (_ - shiftX) / 1000)
-			// Clear canvas.
-			clearElement(canvas)
-			// Calculate bounds.
-			const minX = xScaled[0]
-			const maxX = xScaled[xScaled.length - 1]
-			// let minY = Infinity
-			// Min Y is always 0 by design.
-			const minY = 0
-			let maxY = 0
-			const graphs_ = []
-			for (const graphData of graphs) {
-				const [id, ...points] = graphData
-				graphs_.push({
-					id,
-					points
-				})
-				// minY = Math.min(minY, ...points)
-				maxY = Math.max(maxY, ...points)
+
+			function drawGraphs(redrawTimeline) {
+				const data = DATA[selectedDatasetId]
+				const [xData, ...graphs] = data.columns
+				const [xId, ...x] = xData
+				if (xId !== 'x') {
+					throw new Error('"x" must come first')
+				}
+				// Chrome can't handle timestamps in milliseconds for point coordinates (draws nothing).
+				// Reducing timestamps to lower numbers to work around that bug.
+				shiftX = x[0]
+				const xScaledAll = x.map(_ => (_ - shiftX) / 1000)
+				// Clear canvas.
+				clearElement(canvas)
+				// Calculate bounds.
+				const minXOverall = xScaledAll[0]
+				const maxXOverall = xScaledAll[xScaledAll.length - 1]
+				const deltaX = maxXOverall - minXOverall
+				const minX = minXOverall + timelineWindowFrom * deltaX
+				const maxX = maxXOverall - (1 - timelineWindowTo) * deltaX
+				let minXIndex = xScaledAll.findIndex(x => x > minX) - 2
+				if (minXIndex < 0) {
+					minXIndex = 0
+				}
+				let maxXIndex = xScaledAll.findIndex(x => x > maxX)
+				if (maxXIndex < 0) {
+					maxXIndex = xScaledAll.length - 1
+				}
+				const xScaled = xScaledAll.slice(minXIndex, maxXIndex + 1)
+				// let minY = Infinity
+				// let minYOverall = Infinity
+				// Min Y is always 0 by design.
+				const minY = 0
+				let maxY = 0
+				let maxYOverall = 0
+				timelineWindowGraphs = []
+				const graphsAll = []
+				for (const graphData of graphs) {
+					let [id, ...points] = graphData
+					if (data.types[id] !== 'line') {
+						continue
+					}
+					if (showGraphs[id] === false) {
+						continue
+					}
+					graphsAll.push({
+						id,
+						points
+					})
+					// minYOverall = Math.min(minYOverall, ...points)
+					maxYOverall = Math.max(maxYOverall, ...points)
+					points = points.slice(minXIndex, maxXIndex + 1)
+					timelineWindowGraphs.push({
+						id,
+						points
+					})
+					// minY = Math.min(minY, ...points)
+					maxY = Math.max(maxY, ...points)
+				}
+				// Set canvas `viewBox`.
+				// (add some side padding so that it doesn't trim the graphs on their sides)
+				canvas.setAttribute('viewBox', `${minX - (maxX - minX) * GRAPH_SIDE_PADDING} ${minY} ${(maxX - minX) * (1 + 2 * GRAPH_SIDE_PADDING)} ${maxY - minY}`)
+				// Calculate grid lines' coordinates.
+				const minY_ = 0
+				const maxY_ = getLowerSiblingDivisibleBy(maxY, 10)
+				const yAxisScale = (maxY - minY) / (maxY_ - minY)
+				const yAxisTickMarks = divideInterval(minY_, maxY_)
+				// Draw grid lines.
+				for (const y of yAxisTickMarks) {
+					canvas.appendChild(createGridLine(y, minX, maxX, minY, maxY))
+				}
+				// Draw graphs.
+				for (const { id, points } of timelineWindowGraphs) {
+					const graph = document.createElement('polyline')
+					graph.setAttribute('stroke', data.colors[id])
+					graph.setAttribute('points', commaJoin(xScaled, points.map(y => (maxY - minY) - yScale * y)).join(' '))
+					graph.classList.add('graph')
+					canvas.appendChild(graph)
+				}
+				// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
+				// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
+				canvas.innerHTML += ''
+				// Draw gauges.
+				drawGauges(x[0], x[x.length - 1], minY_, maxY_, yAxisScale)
+				// Draw timeline graph.
+				timelineWindowMinY = minY
+				timelineWindowMaxY = maxY
+				timelineWindowMinX = minX
+				timelineWindowMaxX = maxX
+				timelineWindowXScaled = xScaled
+				if (redrawTimeline) {
+					drawTimeline(data, graphsAll, xScaledAll, minXOverall, maxXOverall, minY, maxYOverall)
+				}
 			}
-			// Set canvas `viewBox`.
-			canvas.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
-			// Draw graphs.
-			for (const { id, points } of graphs_) {
-				const graph = document.createElement('polyline')
-				graph.setAttribute('stroke', data.colors[id])
-				graph.setAttribute('points', commaJoin(xScaled, points.map(y => (maxY - minY) - y)).join(' '))
-				graph.classList.add('graph')
-				canvas.appendChild(graph)
-			}
-			// Calculate grid lines' coordinates.
-			const minY_ = 0
-			const maxY_ = getLowerSiblingDivisibleBy(maxY, 10)
-			const yAxisScale = (maxY - minY) / (maxY_ - minY)
-			const yAxisTickMarks = divideInterval(minY_, maxY_)
-			// Draw grid lines.
-			for (const y of yAxisTickMarks) {
+
+			// function animateScale(scale) {
+			// 	console.log(scale)
+			// 	animateScaleTo = scale
+			// 	animateScaleStartedAt = Date.now()
+			// 	previousYScale = yScale
+			// 	requestAnimationFrame(animateScaleTick)
+			// }
+
+			// function animateScaleTick() {
+			// 	const elapsed = Date.now() - animateScaleStartedAt
+			// 	yScale = previousYScale + (animateScaleTo - previousYScale) * elapsed / 300
+			// 	drawGraphs(true)
+			// 	if (elapsed < 300) {
+			// 		requestAnimationFrame(animateScaleTick)
+			// 	}
+			// }
+
+			function createGridLine(y, minX, maxX, minY, maxY) {
 				const line = document.createElement('line')
 				line.classList.add('grid-line')
 				line.setAttribute('x1', minX)
 				line.setAttribute('x2', maxX)
 				line.setAttribute('y1', (maxY - minY) - y)
 				line.setAttribute('y2', (maxY - minY) - y)
-				canvas.appendChild(line)
+				return line
 			}
-			// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
-			// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
-			canvas.innerHTML += ''
-			// Draw gauges.
-			const xAxis = document.getElementById('x')
-			const yAxis = document.getElementById('y')
-			drawGauge(xAxis, x[0], x[x.length - 1], (timestamp) => {
-				const date = new Date(timestamp)
-				return `${MONTHS[date.getMonth()]} ${date.getDate()}`
-			})
-			drawGauge(yAxis, minY_, maxY_)
-			yAxis.style.height = `${100 / yAxisScale}%`
-			// Add graph togglers.
-			const graphTogglers = document.getElementById('graph-togglers')
-			clearElement(graphTogglers)
-			for (const { id } of graphs_) {
+
+			function drawGauges(minX, maxX, minY, maxY, yAxisScale) {
+				clearElement(xAxis)
+				clearElement(yAxis)
+				drawGauge(xAxis, minX, maxX, (timestamp) => {
+					const date = new Date(timestamp)
+					return `${MONTHS[date.getMonth()]} ${date.getDate()}`
+				})
+				drawGauge(yAxis, minY, maxY)
+				yAxis.style.height = `${100 / yAxisScale}%`
+			}
+
+			function drawTimeline(data, graphs, x, minX, maxX, minY, maxY) {
+				clearElement(timelineCanvas)
+				// Set canvas `viewBox`.
+				timelineCanvas.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
+				for (const { id, points } of graphs) {
+					const graph = document.createElement('polyline')
+					graph.setAttribute('stroke', data.colors[id])
+					graph.setAttribute('points', commaJoin(x, points.map(y => (maxY - minY) - y)).join(' '))
+					graph.classList.add('graph')
+					timelineCanvas.appendChild(graph)
+				}
+				// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
+				// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
+				timelineCanvas.innerHTML += ''
+			}
+
+			function createGraphToggler(id, data) {
 				const toggler = document.createElement('button')
 				toggler.setAttribute('type', 'button')
 				toggler.classList.add('graph-toggler')
 				toggler.classList.add('reset-button')
-				graphTogglers.appendChild(toggler)
-				// Add checkmark.
+				// Add check.
 				const xmlns = 'http://www.w3.org/2000/svg'
-            var checkmark = document.createElementNS(xmlns, 'svg')
-            checkmark.setAttributeNS(null, 'viewBox', '0 0 19 19')
-            checkmark.classList.add('graph-toggler__check')
-            checkmark.classList.add('graph-toggler__check--checked')
-            // Add circle.
-            const circle = document.createElementNS(xmlns, 'circle')
-            circle.setAttribute('cx', '9.5')
-            circle.setAttribute('cy', '9.5')
-            circle.setAttribute('r', '9.5')
-            circle.setAttribute('fill', data.colors[id])
-            checkmark.appendChild(circle)
+            const check = document.createElementNS(xmlns, 'svg')
+            check.setAttributeNS(null, 'viewBox', '0 0 19 19')
+            check.classList.add('graph-toggler__check')
+            check.classList.add('graph-toggler__check--checked')
+            // Add background circle.
+            const backgroundCircle = document.createElementNS(xmlns, 'circle')
+            backgroundCircle.setAttribute('cx', '9.5')
+            backgroundCircle.setAttribute('cy', '9.5')
+            backgroundCircle.setAttribute('r', '9.5')
+            backgroundCircle.setAttribute('fill', data.colors[id])
+            check.appendChild(backgroundCircle)
+            // Add check circle.
+            const checkCircle = document.createElementNS(xmlns, 'circle')
+            checkCircle.setAttribute('cx', '9.5')
+            checkCircle.setAttribute('cy', '9.5')
+            checkCircle.setAttribute('r', '8')
+            checkCircle.setAttribute('fill', 'white')
+            checkCircle.classList.add('graph-toggler__check-circle')
+            check.appendChild(checkCircle)
             // Add check mark.
-            const path = document.createElementNS(xmlns, 'path')
-            path.setAttribute('d', 'M13.64 4.94l-6.2 6.34-1.69-1.9c-.73-.63-1.89.1-1.36 1.06l2 3.38c.3.43 1.04.85 1.78 0 .32-.42 6.31-7.93 6.31-7.93.74-.84-.2-1.58-.84-.95z')
-            path.setAttribute('fill', 'white')
-            checkmark.appendChild(path)
+            const checkMark = document.createElementNS(xmlns, 'path')
+            checkMark.setAttribute('d', 'M13.64 4.94l-6.2 6.34-1.69-1.9c-.73-.63-1.89.1-1.36 1.06l2 3.38c.3.43 1.04.85 1.78 0 .32-.42 6.31-7.93 6.31-7.93.74-.84-.2-1.58-.84-.95z')
+            checkMark.setAttribute('fill', 'white')
+            checkMark.classList.add('graph-toggler__check-mark')
+            check.appendChild(checkMark)
 				// Add checkmark.
-				toggler.appendChild(checkmark)
+				toggler.appendChild(check)
 				// Add graph name.
 				toggler.appendChild(document.createTextNode(data.names[id]))
+				// On click.
+				toggler.addEventListener('click', () => {
+					const show = showGraphs[id] === false ? true : false
+					// Won't allow hiding all graphs.
+					if (!show) {
+						const graphsShown = Object.keys(data.names).filter(id => showGraphs[id] !== false).length
+						if (graphsShown === 1) {
+							return
+						}
+					}
+					// showGraphsNext = { ...showGraphs }
+					// showGraphsNext[id] = show
+					// const maxYNext = getMaxY(timelineWindowGraphs.filter(_ => showGraphsNext[_.id] !== false))
+					// const scale = timelineWindowMaxY / maxYNext
+					// if (scale !== 1) {
+					// 	animateScale(scale)
+					// }
+					showGraphs[id] = show
+					drawGraphs(true)
+					check.classList.toggle('graph-toggler__check--checked')
+				})
+				return toggler
 			}
-			// Set up timeline.
-			const timelineOverlayLeft = document.getElementById('timeline-overlay-left')
-			const timelineWindow = document.getElementById('timeline-window')
-			const timelineOverlayRight = document.getElementById('timeline-overlay-right')
-			timelineOverlayLeft.style.left = 0
-			timelineOverlayLeft.style.right = (100 - 30) + '%'
-			timelineWindow.style.left = 30 + '%'
-			timelineWindow.style.right = 30 + '%'
-			timelineOverlayRight.style.left = (100 - 30) + '%'
-			timelineOverlayRight.style.right = 0
-			// Draw timeline graph.
-			const timelineCanvas = document.getElementById('timeline-canvas')
-			// Set canvas `viewBox`.
-			timelineCanvas.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
-			for (const { id, points } of graphs_) {
-				const graph = document.createElement('polyline')
-				graph.setAttribute('stroke', data.colors[id])
-				graph.setAttribute('points', commaJoin(xScaled, points.map(y => (maxY - minY) - y)).join(' '))
-				graph.classList.add('graph')
-				timelineCanvas.appendChild(graph)
+
+			function getMaxY(graphs) {
+				let maxY = 0
+				for (const graph of graphs) {
+					maxY = Math.max(maxY, ...graph.points)
+				}
+				return maxY
 			}
-			// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
-			// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
-			timelineCanvas.innerHTML += ''
+
+			function setUpTimelineWindowHandle(side) {
+				const handle = side === 'left' ? timelineWindowLeftHandle : timelineWindowRightHandle
+				const handleWidth = handle.getBoundingClientRect().width
+				let isDragging = false
+				let timelineCoordinates
+				let minX
+				let maxX
+				let innerX
+				function listener(event) {
+					let x = side === 'left' ? event.clientX - innerX : event.clientX + innerX
+					x = Math.max(Math.min(x, maxX), minX)
+					x = (x - timelineCoordinates.x) / timelineCoordinates.width
+					if (side === 'left') {
+						timelineWindowFrom = x
+					} else {
+						timelineWindowTo = x
+					}
+					updateTimelineWindow()
+				}
+				function startDragging(event) {
+					if (!isDragging) {
+						isDragging = true
+						window.addEventListener('pointermove', listener)
+						timelineCoordinates = timeline.getBoundingClientRect()
+						const timelineWindowCoordinates = timelineWindow.getBoundingClientRect()
+						if (side === 'left') {
+							minX = timelineCoordinates.x
+							maxX = timelineOverlayRight.getBoundingClientRect().x - 2 * handleWidth
+							innerX = event.clientX - timelineWindowCoordinates.x
+						} else {
+							minX = timelineWindow.getBoundingClientRect().x + 2 * handleWidth
+							maxX = timelineCoordinates.x + timelineCoordinates.width
+							innerX = timelineWindowCoordinates.x + timelineWindowCoordinates.width - event.clientX
+						}
+					}
+				}
+				function stopDragging() {
+					if (isDragging) {
+						isDragging = false
+						window.removeEventListener('pointermove', listener)
+					}
+				}
+				handle.addEventListener('touchstart', (event) => {
+					// Prevent the web browser from handling this touch event.
+					event.preventDefault()
+				})
+				handle.addEventListener('pointerdown', (event) => {
+					event.preventDefault()
+					startDragging(event)
+				})
+				window.addEventListener('pointerup', stopDragging)
+				window.addEventListener('pointercancel', stopDragging)
+			}
+
+			function setUpTimelineWindow() {
+				let isDragging = false
+				let timelineCoordinates
+				let timelineWindowCoordinates
+				let minX
+				let maxX
+				let innerX
+				function listener(event) {
+					let x = event.clientX - innerX
+					x = Math.max(Math.min(x, maxX), minX)
+					x = (x - timelineCoordinates.x) / timelineCoordinates.width
+					timelineWindowFrom = x
+					timelineWindowTo = x + timelineWindowCoordinates.width / timelineCoordinates.width
+					updateTimelineWindow()
+				}
+				function startDragging(event) {
+					if (!isDragging && event.target === timelineWindow) {
+						isDragging = true
+						window.addEventListener('pointermove', listener)
+						timelineCoordinates = timeline.getBoundingClientRect()
+						timelineWindowCoordinates = timelineWindow.getBoundingClientRect()
+						innerX = event.clientX - timelineWindowCoordinates.x
+						minX = timelineCoordinates.x
+						maxX = timelineCoordinates.x + (timelineCoordinates.width - timelineWindowCoordinates.width)
+					}
+				}
+				function stopDragging() {
+					if (isDragging) {
+						isDragging = false
+						window.removeEventListener('pointermove', listener)
+					}
+				}
+				timelineWindow.addEventListener('touchstart', (event) => {
+					// Prevent the web browser from handling this touch event.
+					event.preventDefault()
+				})
+				timelineWindow.addEventListener('pointerdown', (event) => {
+					event.preventDefault()
+					startDragging(event)
+				})
+				window.addEventListener('pointerup', stopDragging)
+				window.addEventListener('pointercancel', stopDragging)
+			}
+
+			function setTimelineWindowLeft(x) {
+				timelineOverlayLeft.style.right = `${100 * (1 - x)}%`
+				timelineWindow.style.left = `${100 * x}%`
+			}
+
+			function setTimelineWindowRight(x) {
+				timelineOverlayRight.style.left = `${100 * x}%`
+				timelineWindow.style.right = `${100 * (1 - x)}%`
+			}
+
+			function updateTimelineWindow() {
+				setTimelineWindowLeft(timelineWindowFrom)
+				setTimelineWindowRight(timelineWindowTo)
+				drawGraphs(false)
+			}
+
+			function setUpDatasetSelector() {
+				const datasetSelector = document.getElementById('dataset-selector')
+				const options = DATA.map((data, i) => {
+					const option = document.createElement('option')
+					option.value = i
+					option.selected = i === 0
+					option.appendChild(document.createTextNode(i))
+					return option
+				})
+				for (const option of options) {
+					datasetSelector.appendChild(option)
+				}
+				datasetSelector.addEventListener('change', () => {
+					selectedDatasetId = datasetSelector.value
+					displayGraphs()
+				})
+			}
+
+			function setUpNightModeSwitch() {
+				function setText() {
+					nightModeSwitch.textContent = `Switch to ${nightMode ? 'Day' : 'Night'} Mode`
+				}
+				nightModeSwitch.addEventListener('click', () => {
+					nightMode = !nightMode
+					document.body.classList.toggle('body--night-mode')
+					clearElement(nightModeSwitch)
+					setText()
+				})
+				setText()
+			}
+
+			function setUpCanvas() {
+				let canvasDimensions
+				function onTrack(event) {
+					const xPercent = (event.clientX - canvasDimensions.x) / canvasDimensions.width
+					let x = timelineWindowMinX + xPercent * (timelineWindowMaxX - timelineWindowMinX)
+					const xHigherIndex = timelineWindowXScaled.findIndex(_ => _ >= x)
+					const xLowerIndex = xHigherIndex >= 0 ? xHigherIndex - 1 : timelineWindowXScaled.length - 1
+					if (xHigherIndex < 0) {
+						if (xLowerIndex < 0) {
+							removeGraphTooltip()
+						} else {
+							x = timelineWindowXScaled[xLowerIndex]
+						}
+					} else {
+						if (xLowerIndex < 0) {
+							x = timelineWindowXScaled[xHigherIndex]
+						} else {
+							const xLower = timelineWindowXScaled[xLowerIndex]
+							const xHigher = timelineWindowXScaled[xHigherIndex]
+							const deltaLower = x - xLower
+							const deltaHigher = xHigher - x
+							x = deltaLower > deltaHigher ? xHigher : xLower
+						}
+					}
+					if (x !== graphTooltipX) {
+						graphTooltipX = x
+						if (!graphTooltipLine) {
+							graphTooltip.style.display = 'block'
+						}
+						graphTooltip.style.left = `${xPercent * 100}%`
+						const date = new Date(x * 1000 + shiftX)
+						graphTooltipDate.textContent = `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`
+						const xIndex = timelineWindowXScaled.indexOf(x)
+						let i = 0
+						while (i < graphTooltipValues.childNodes.length) {
+							graphTooltipValues.childNodes[i].textContent = timelineWindowGraphs[i].points[xIndex]
+							i++
+						}
+						drawGraphTooltipPoints(xIndex, (x - timelineWindowMinX) / (timelineWindowMaxX - timelineWindowMinX))
+						drawGraphTooltipLine(x)
+					}
+				}
+				canvas.addEventListener('pointerenter', () => {
+					canvasDimensions = canvas.getBoundingClientRect()
+					canvas.addEventListener('pointermove', onTrack)
+				})
+				canvas.addEventListener('pointerleave', () => {
+					canvas.removeEventListener('pointermove', onTrack)
+					removeGraphTooltip()
+				})
+			}
+
+			function removeGraphTooltip() {
+				graphTooltipX = undefined
+				if (graphTooltipLine) {
+					graphTooltip.style.display = 'none'
+					removeGraphTooltipPoints()
+					removeGraphTooltipLine()
+				}
+			}
+
+			function removeGraphTooltipLine() {
+				canvas.removeChild(graphTooltipLine)
+				graphTooltipLine = undefined
+			}
+
+			function removeGraphTooltipPoints() {
+            for (const point of graphTooltipPoints) {
+            	graphTooltipContainer.removeChild(point)
+            }
+            graphTooltipPoints = undefined
+			}
+
+			function drawGraphTooltipLine(x) {
+				if (!graphTooltipLine) {
+					const xmlns = 'http://www.w3.org/2000/svg'
+					graphTooltipLine = document.createElementNS(xmlns, 'line')
+					graphTooltipLine.setAttributeNS(null, 'id', 'graph-tooltip-line')
+					canvas.appendChild(graphTooltipLine)
+				}
+            graphTooltipLine.setAttributeNS(null, 'x1', x)
+            graphTooltipLine.setAttributeNS(null, 'x2', x)
+            graphTooltipLine.setAttributeNS(null, 'y1', timelineWindowMinY)
+            graphTooltipLine.setAttributeNS(null, 'y2', timelineWindowMaxY)
+			}
+
+			function drawGraphTooltipPoints(xIndex, xPercent) {
+				if (!graphTooltipPoints) {
+					// Draw tooltip points.
+					graphTooltipPoints = []
+					let i = 0
+					while (i < timelineWindowGraphs.length) {
+						const point = document.createElement('div')
+						point.classList.add('graph-tooltip-point')
+						point.style.color = DATA[selectedDatasetId].colors[timelineWindowGraphs[i].id]
+						graphTooltipPoints.push(point)
+						graphTooltipContainer.appendChild(point)
+						i++
+					}
+				}
+				let i = 0
+				while (i < graphTooltipPoints.length) {
+					const point = graphTooltipPoints[i]
+					point.style.left = `${xPercent * 100}%`
+					const y = timelineWindowGraphs[i].points[xIndex]
+					const yPercent = y / timelineWindowMaxY
+					point.style.bottom = `${yPercent * 100}%`
+					i++
+            }
+			}
 		</script>
 	</body>
 </html>
