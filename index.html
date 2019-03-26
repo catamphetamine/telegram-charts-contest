@@ -185,8 +185,10 @@
 				/* Also don't crop the bottom-most grid line. */
 				overflow: visible;
 				/* Prevent the web browser from handling this touch event. */
-				/* Is supposed to be used in conjunction with `event.preventDefault()`. */
 				/* https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action */
+				/* iOS Safari only supports `none` and `manipulation`. */
+				/* https://caniuse.com/#search=touch-action */
+				touch-action: none;
 				touch-action: pan-y pinch-zoom;
 			}
 
@@ -337,8 +339,10 @@
 				height: 3.6em;
 				margin-top: 1.5em;
 				/* Prevent the web browser from handling this touch event. */
-				/* Is supposed to be used in conjunction with `event.preventDefault()`. */
 				/* https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action */
+				/* iOS Safari only supports `none` and `manipulation`. */
+				/* https://caniuse.com/#search=touch-action */
+				touch-action: none;
 				touch-action: pan-y pinch-zoom;
 			}
 
@@ -1090,10 +1094,6 @@
 						// Reset.
 						return onDragStop()
 					}
-					// Prevent the web browser from handling this touch event.
-					// Combine with `touch-action: none`.
-					// https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
-					event.preventDefault()
 					onDragStart(
 						event.changedTouches[0].clientX,
 						event.changedTouches[0].clientY
@@ -1106,10 +1106,6 @@
 				// https://caniuse.com/#feat=pointer
 				element.addEventListener('touchstart', onTouchStart)
 				function onPointerDown(event) {
-					// Prevent the web browser from handling this touch event.
-					// Combine with `touch-action: none`.
-					// https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
-					event.preventDefault()
 					onDragStart(event.clientX, event.clientY)
 					window.addEventListener('pointermove', onPointerMove)
 					window.addEventListener('pointerup', onDragStop)
@@ -1238,10 +1234,6 @@
 						// Reset.
 						return onTrackStop()
 					}
-					// Prevent the web browser from handling this touch event.
-					// Combine with `touch-action: none`.
-					// https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
-					event.preventDefault()
 					onTrackStart()
 					canvas.addEventListener('touchend', onTrackStop)
 					canvas.addEventListener('touchmove', onTouchMove)
