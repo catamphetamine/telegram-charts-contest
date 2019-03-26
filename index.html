@@ -28,6 +28,11 @@
 
 				/* Corrects inability to style clickable `input` types in iOS */
 				-webkit-appearance: none;
+
+				/* Removes iOS Safari blue highlight on tap */
+				-webkit-tap-highlight-color:  rgba(255, 255, 255, 0);
+
+				/*touch-action: manipulation;*/
 			}
 
 			/* Remove excess padding and border in Firefox 4+ */
@@ -1242,6 +1247,7 @@
 					canvas.addEventListener('touchmove', onTouchMove)
 					canvas.addEventListener('touchend', onTrackStop)
 					canvas.addEventListener('touchcancel', onTrackStop)
+					onTouchMove(event)
 				}
 				// Safari doesn't support pointer events.
 				// https://caniuse.com/#feat=pointer
