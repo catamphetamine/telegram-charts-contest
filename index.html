@@ -6,14 +6,19 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 		<style>
+			/* Must come before any button styles. */
+			/* Copy-pasted (and edited) from: */
 			/* https://gist.github.com/MoOx/9137295 */
-			.reset-button {
+			.chartogram__reset-button {
 				border: none;
 				margin: 0;
 				padding: 0;
 				width: auto;
 				overflow: visible;
 				background: transparent;
+
+				outline: none;
+				cursor: pointer;
 
 				/* inherit font & color from ancestor */
 				color: inherit;
@@ -37,78 +42,28 @@
 			}
 
 			/* Remove excess padding and border in Firefox 4+ */
-			.reset-button::-moz-focus-inner {
+			.chartogram__reset-button::-moz-focus-inner {
 				border: 0;
 				padding: 0;
 			}
-		</style>
-
-		<style>
-			body {
-				--chartogram-background-color: rgb(255,255,255);
-				/*--chartogram-background-color-transparent: rgba(255,255,255,0);*/
-				--chartogram-night-mode-transition-duration: 300ms;
-
-				margin: 0;
-				font-family: sans-serif;
-				background-color: var(--chartogram-background-color);
-				transition: all var(--chartogram-night-mode-transition-duration);
-				color: black;
-			}
-
-			.body--night-mode {
-				--chartogram-background-color: rgb(36,47,62);
-				/*--chartogram-background-color-transparent: rgba(36,47,62,0);*/
-
-				background-color: var(--chartogram-background-color);
-			}
-
-			#dataset-selector {
-				border: none;
-				outline: none;
-				color: inherit;
-				background: var(--chartogram-background-color);
-				transition: all var(--chartogram-night-mode-transition-duration);
-				font-size: 130%;
-			}
-
-			#chartogram {
-				width: 100%;
-				max-width: 40em;
-				margin-top: 1.5em;
-				margin-bottom: 2em;
-				margin-left: auto;
-				margin-right: auto;
-				padding-left: 1em;
-				padding-right: 1em;
-				font-size: var(--chartogram-font-size);
-				box-sizing: border-box;
-			}
 
 			.chartogram {
-				--gray-color-lighter: #dadada;
-				--gray-color-light: #f0f0f0;
-				--gray-color-lightest: #f5f5f5;
-				--base-color: #2390e4;
-				--base-color-dark: #0e74c3;
+				--chartogram-background-color: white;
 				--chartogram-font-size: 16px;
 				--chartogram-stroke-width: 3px;
 				--chartogram-timeline-stroke-width: 2px;
-				--chartogram-text-color-light: #b0b0b0;
-				--x-axis-padding-top: 0.7em;
-				--y-axis-values-shift: 0.5em;
-				--graphics-top-overflow-border-height: 0.85em;
-				--graphics-top-overflow-border-margin: 0.85em;
+				--chartogram-x-axis-labels-padding-top: 0.7em;
+				--chartogram-y-axis-labels-padding-bottom: 0.5em;
 				--chartogram-timeline-overlay-color: rgba(245,247,250,0.85);
 				--chartogram-timeline-window-border-color: rgba(0,106,146,0.12);
-				--border-color: var(--gray-color-lighter);
-				--border-color-light: var(--gray-color-light);
-				--border-color-lightest: var(--gray-color-lightest);
-				--button-active-color: rgba(46,86,117,0.05);
-				--graph-tooltip-background-color: var(--chartogram-background-color);
-
-				display: flex;
-				flex-direction: column;
+				--chartogram-content-color: inherit;
+				--chartogram-content-color-lighter: #b0b0b0;
+				--chartogram-content-color-light: #dadada;
+				--chartogram-content-color-very-light: #f0f0f0;
+				--chartogram-content-color-lightest: #f5f5f5;
+				--chartogram-button-active-color: #f5f5f5;
+				--chartogram-tooltip-background-color: var(--chartogram-background-color);
+				--chartogram-night-mode-transition-duration: 300ms;
 
 				/* Prevents text selection when clicking and dragging the timeline window. */
 				-webkit-user-select: none;
@@ -116,26 +71,29 @@
 				-moz-user-select: none;
 				-o-user-select: none;
 				user-select: none;
+
+				font-size: var(--chartogram-font-size);
 			}
 
 			.chartogram--night-mode {
-				--chartogram-text-color: white;
-				--chartogram-text-color-light: #546778;
-				--border-color: #344658;
-				--border-color-light: #313d4d;
-				--border-color-lightest: #293544;
-				--button-active-color: #344658;
+				--chartogram-background-color: rgb(36,47,62);
+				--chartogram-content-color: white;
+				--chartogram-content-color-lighter: #546778;
+				--chartogram-content-color-light: #344658;
+				--chartogram-content-color-very-light: #313d4d;
+				--chartogram-content-color-lightest: #293544;
+				--chartogram-button-active-color: var(--chartogram-content-color-light);
 				--chartogram-timeline-overlay-color: rgba(31,45,63,0.72);
 				--chartogram-timeline-window-border-color: rgba(147,220,255,0.2);
-				--graph-tooltip-background-color: var(--border-color-lightest);
+				--chartogram-tooltip-background-color: var(--chartogram-content-color-lightest);
 
-				color: var(--chartogram-text-color);
+				color: var(--chartogram-content-color);
 			}
 
 			.chartogram__top-border {
 				width: 100%;
-				height: var(--graphics-top-overflow-border-height);
-				margin-bottom: calc(var(--graphics-top-overflow-border-margin) + 1em);
+				height: 0.85em;
+				margin-bottom: calc(0.85em + 1em);
 				transition: all var(--chartogram-night-mode-transition-duration);
 				/* Gradients don't support transitions. */
 				background-color: var(--chartogram-background-color);
@@ -163,7 +121,7 @@
 
 			.chartogram__plan-with-axes {
 				/* Padding bottom added for the X axis labels. */
-				padding-bottom: calc(var(--x-axis-padding-top) + var(--chartogram-font-size));
+				padding-bottom: calc(var(--chartogram-x-axis-labels-padding-top) + var(--chartogram-font-size));
 			}
 
 			.chartogram__plan {
@@ -194,14 +152,14 @@
 			}
 
 			.chartogram__x, .chartogram__y {
-				color: var(--chartogram-text-color-light);
+				color: var(--chartogram-content-color-lighter);
 				transition: color var(--chartogram-night-mode-transition-duration);
 			}
 
 			.chartogram__y {
 				position: absolute;
 				left: 0;
-				bottom: var(--y-axis-values-shift);
+				bottom: var(--chartogram-y-axis-labels-padding-bottom);
 				height: 100%;
 				line-height: 1em;
 				display: flex;
@@ -225,7 +183,7 @@
 				top: 100%;
 				display: flex;
 				justify-content: space-between;
-				padding-top: var(--x-axis-padding-top);
+				padding-top: var(--chartogram-x-axis-labels-padding-top);
 				padding-left: 0.7em;
 				padding-right: 0.7em;
 				line-height: 1em
@@ -245,7 +203,7 @@
 			}
 
 			.chartogram__grid-line {
-				stroke: var(--border-color-lightest);
+				stroke: var(--chartogram-content-color-lightest);
 				transition: stroke var(--chartogram-night-mode-transition-duration);
 				stroke-width: var(--chartogram-timeline-stroke-width);
 				/* `vector-effect` fixes `stroke-width` to be in screen pixels. */
@@ -257,7 +215,7 @@
 			}
 
 			.chartogram__grid-line:first-child {
-				stroke: var(--border-color-light);
+				stroke: var(--chartogram-content-color-very-light);
 			}
 
 			.chartogram__tooltip {
@@ -271,7 +229,7 @@
 				padding-left: 0.85em;
 				padding-right: 0.85em;
 				box-shadow: 0 1px 0.2em rgba(0,0,0,0.18);
-				background-color: var(--graph-tooltip-background-color);
+				background-color: var(--chartogram-tooltip-background-color);
 				transform: translateX(-50%);
 				z-index: 1;
 				/* So that hovering it doesn't result in 'pointerleave' event on canvas. */
@@ -325,7 +283,7 @@
 			}
 
 			.chartogram__tooltip-line {
-				stroke: var(--border-color);
+				stroke: var(--chartogram-content-color-light);
 				stroke-width: 1px;
 				/* `vector-effect` fixes `stroke-width` to be in screen pixels. */
 				/* (instead of <svg/> `viewBox` units) */
@@ -438,11 +396,9 @@
 				padding-right: 0.8em;
 				margin-right: 1em;
 				border-radius: 1.1em;
-				box-shadow: 0 0 2px var(--chartogram-text-color-light);
+				box-shadow: 0 0 2px var(--chartogram-content-color-lighter);
 				font-family: inherit;
 				font-size: 140%;
-				outline: none;
-				cursor: pointer;
 				transition: color var(--chartogram-night-mode-transition-duration), box-shadow var(--chartogram-night-mode-transition-duration);;
 			}
 
@@ -451,7 +407,7 @@
 			}
 
 			.chartogram__chart-toggler:active {
-				background-color: var(--button-active-color);
+				background-color: var(--chartogram-button-active-color);
 			}
 
 			.chartogram__chart-toggler-check {
@@ -482,20 +438,75 @@
 			.chartogram__chart-toggler--on .chartogram__chart-toggler-check-circle {
 				transform: scale(0);
 			}
+		</style>
 
-			.chartogram__night-mode-switch {
+		<style>
+			body {
+				--background-color: white;
+				/*--background-color-transparent: rgba(255,255,255,0);*/
+				--night-mode-transition-duration: 300ms;
+
+				margin: 0;
+				font-family: sans-serif;
+				background-color: var(--background-color);
+				transition: all var(--night-mode-transition-duration);
+				color: black;
+
+				display: flex;
+				flex-direction: column;
+			}
+
+			.night-mode {
+				--background-color: rgb(36,47,62);
+				/*--background-color-transparent: rgba(36,47,62,0);*/
+			}
+
+			.chartogram {
+				--chartogram-background-color: var(--background-color);
+				--chartogram-night-mode-transition-duration: var(--night-mode-transition-duration);
+			}
+
+			#dataset-selection {
+				margin-top: 1em;
+				font-size: 20px;
+				text-align: center;
+				color: #7f7f7f;
+			}
+
+			#dataset-selector {
+				border: none;
+				outline: none;
+				color: inherit;
+				background: var(--background-color);
+				transition: all var(--night-mode-transition-duration);
+				font-size: inherit;
+			}
+
+			#night-mode-switch {
 				margin-left: auto;
 				margin-right: auto;
 				margin-top: 2em;
+				margin-bottom: 1em;
 				padding: 0.5em;
 				font-size: 160%;
 				outline: none;
 				cursor: pointer;
-				color: var(--base-color);
+				color: #2390e4;
 			}
 
-			.chartogram__night-mode-switch:active {
-				color: var(--base-color-dark);
+			#night-mode-switch:active {
+				color: #0e74c3;
+			}
+
+			#chartogram {
+				width: 100%;
+				max-width: 40em;
+				margin-top: 1.5em;
+				margin-left: auto;
+				margin-right: auto;
+				padding-left: 1em;
+				padding-right: 1em;
+				box-sizing: border-box;
 			}
 		</style>
 
@@ -608,533 +619,52 @@
 		</script>
 
 		<script>
-			function clearElement(element) {
-				while(element.firstChild) {
-					element.removeChild(element.firstChild)
-				}
-			}
-
-			function commaJoin(a, b) {
-				return a.map((ai, i) => `${ai},${b[i]}`)
-			}
-
-			function getLowerSiblingDivisibleBy(n, divider) {
-				while (true) {
-					if (n < divider) {
-						return divider
-					}
-					if (n % divider === 0) {
-						return n
-					}
-					n--
-				}
-			}
-
-			function divideInterval(min, max) {
-				const points = new Array(GAUGE_TICK_MARKS_COUNT)
-				let i = 0
-				while (i < GAUGE_TICK_MARKS_COUNT) {
-					points[i] = min + i * (max - min) / (GAUGE_TICK_MARKS_COUNT - 1)
-					i++
-				}
-				return points
-			}
-
-			function drawGauge(element, min, max, transform) {
-				let i = 0
-				while (i < GAUGE_TICK_MARKS_COUNT) {
-					const tickMark = document.createElement('div')
-					let value = min + i * (max - min) / (GAUGE_TICK_MARKS_COUNT - 1)
-					if (transform) {
-						value = transform(value)
-					}
-					tickMark.appendChild(document.createTextNode(value))
-					element.appendChild(tickMark)
-					i++
-				}
-			}
-
-			const MONTHS = [
-				'Jan',
-				'Feb',
-				'Mar',
-				'Apr',
-				'May',
-				'Jun',
-				'Jul',
-				'Aug',
-				'Sep',
-				'Oct',
-				'Nov',
-				'Dec'
-			]
-
-			const WEEKDAYS = [
-				'Sun',
-				'Mon',
-				'Tue',
-				'Wed',
-				'Thu',
-				'Fri',
-				'Sat'
-			]
 		</script>
 	</head>
 	<body>
-		<section id="chartogram" class="chartogram">
-			<header class="chartogram__header">
-				<h1 class="chartogram__title">Followers</h1>
-				<select id="dataset-selector"></select>
-			</header>
-			<div class="chartogram__plan-with-axes">
-				<div class="chartogram__plan">
-					<div class="chartogram__top-border"></div>
-					<div class="chartogram__top-border--night-mode"></div>
-					<div class="chartogram__canvas-wrapper">
-						<svg class="chartogram__canvas" preserveAspectRatio="none"></svg>
-						<div class="chartogram__x"></div>
-						<div class="chartogram__y-wrapper">
-							<div class="chartogram__y"></div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="chartogram__timeline">
-				<div class="chartogram__timeline-canvas-padding">
-					<svg class="chartogram__timeline-canvas" preserveAspectRatio="none"></svg>
-				</div>
-				<div class="chartogram__timeline-overlay-left"></div>
-				<div class="chartogram__timeline-overlay-right"></div>
-				<div class="chartogram__timeline-window">
-					<button type="button" class="reset-button chartogram__timeline-window__drag"></button>
-					<button type="button" class="reset-button chartogram__timeline-window__left-handle"></button>
-					<button type="button" class="reset-button chartogram__timeline-window__right-handle"></button>
-				</div>
-			</div>
-			<div class="chartogram__chart-togglers"></div>
-			<button type="button" class="chartogram__night-mode-switch reset-button"></button>
-		</section>
+		<div id="dataset-selection">
+			Dataset: <select id="dataset-selector"></select>
+		</div>
+
+		<section id="chartogram"></section>
+
+		<button type="button" id="night-mode-switch" class="chartogram__reset-button"></button>
 
 		<script>
-			const GAUGE_TICK_MARKS_COUNT = 6
-			const tooltipContainer = document.querySelector('.chartogram__plan')
-			const canvas = document.querySelector('.chartogram__canvas')
-			const canvasWrapper = document.querySelector('.chartogram__canvas-wrapper')
-			const xAxis = document.querySelector('.chartogram__x')
-			const yAxis = document.querySelector('.chartogram__y')
-			let tooltipLine
-			const timeline = document.querySelector('.chartogram__timeline')
-			const timelineOverlayLeft = document.querySelector('.chartogram__timeline-overlay-left')
-			const timelineWindowLeftHandle = document.querySelector('.chartogram__timeline-window__left-handle')
-			const timelineWindow = document.querySelector('.chartogram__timeline-window')
-			const timelineWindowDrag = document.querySelector('.chartogram__timeline-window__drag')
-			const timelineWindowRightHandle = document.querySelector('.chartogram__timeline-window__right-handle')
-			const timelineOverlayRight = document.querySelector('.chartogram__timeline-overlay-right')
-			const timelineCanvas = document.querySelector('.chartogram__timeline-canvas')
-			const nightModeSwitch = document.querySelector('.chartogram__night-mode-switch')
-
-			let timelineWindowFrom
-			let timelineWindowTo
-			let showGraphs
-			let showGraphsNext
-			let timelineWindowGraphs
-			let timelineWindowMinX
-			let timelineWindowMaxX
-			let timelineWindowMinY
-			let timelineWindowMaxY
-			let shiftX
-			let timelineWindowXScaled
-			let tooltip
-			let tooltipDate
-			let tooltipValues
-			let tooltipForX
-			let tooltipPoints
-
-			let yScale = 1
-			let previousYScale
-
 			let selectedDatasetId = 0
-			let nightMode = false
+			const chartogramNode = document.querySelector('#chartogram')
 
+			function drawChartogram() {
+				const data = {
+					lines: []
+				}
+				for (const column of DATA[selectedDatasetId].columns) {
+					const id = column[0]
+					switch (DATA[selectedDatasetId].types[id]) {
+						case 'x':
+							data.x = {
+								points: column.slice(1),
+								name: DATA[selectedDatasetId].names[id]
+							}
+							break
+						case 'line':
+							data.lines.push({
+								id,
+								points: column.slice(1),
+								name: DATA[selectedDatasetId].names[id],
+								color: DATA[selectedDatasetId].colors[id]
+							})
+							break
+						default:
+							throw new Error(`Unknown chart data type: ${DATA[selectedDatasetId].types[id]}`)
+					}
+				}
+				chartogram(chartogramNode, data, 'Followers')
+			}
+
+			drawChartogram()
 			setUpDatasetSelector()
-			setUpTimelineWindowHandle('left')
-			setUpTimelineWindowHandle('right')
-			setUpTimelineWindow()
 			setUpNightModeSwitch()
-
-			displayGraphs()
-			setUpCanvas()
-
-			function displayGraphs() {
-				showGraphs = {}
-				showGraphsNext = undefined
-				timelineWindowFrom = 0
-				timelineWindowTo = 1
-				updateTimelineWindow()
-				drawGraphs(true)
-				tooltipLine = undefined
-				// Add graph togglers.
-				const graphTogglers = document.querySelector('.chartogram__chart-togglers')
-				clearElement(graphTogglers)
-				const data = DATA[selectedDatasetId]
-				for (const id of Object.keys(data.types)) {
-					if (data.types[id] === 'line') {
-						graphTogglers.appendChild(createGraphToggler(id, data))
-					}
-				}
-			}
-
-			function drawGraphs(redrawTimeline) {
-				const data = DATA[selectedDatasetId]
-				const [xData, ...graphs] = data.columns
-				const [xId, ...x] = xData
-				if (xId !== 'x') {
-					throw new Error('"x" must come first')
-				}
-				// Chrome can't handle timestamps in milliseconds for point coordinates (draws nothing).
-				// Reducing timestamps to lower numbers to work around that bug.
-				shiftX = x[0]
-				const xScaledAll = x.map(_ => (_ - shiftX) / 1000)
-				// Clear canvas.
-				clearElement(canvas)
-				// Calculate bounds.
-				const minXOverall = xScaledAll[0]
-				const maxXOverall = xScaledAll[xScaledAll.length - 1]
-				const deltaX = maxXOverall - minXOverall
-				const minX = minXOverall + timelineWindowFrom * deltaX
-				const maxX = maxXOverall - (1 - timelineWindowTo) * deltaX
-				let minXIndex = xScaledAll.findIndex(x => x > minX) - 1
-				if (minXIndex < 0) {
-					minXIndex = 0
-				}
-				let maxXIndex = xScaledAll.findIndex(x => x > maxX)
-				if (maxXIndex < 0) {
-					maxXIndex = xScaledAll.length - 1
-				}
-				const xScaled = xScaledAll.slice(minXIndex, maxXIndex + 1)
-				// let minY = Infinity
-				// let minYOverall = Infinity
-				// Min Y is always 0 by design.
-				const minY = 0
-				let maxY = 0
-				let maxYOverall = 0
-				timelineWindowGraphs = []
-				const graphsAll = []
-				for (const graphData of graphs) {
-					let [id, ...points] = graphData
-					if (data.types[id] !== 'line') {
-						continue
-					}
-					if (showGraphs[id] === false) {
-						continue
-					}
-					graphsAll.push({
-						id,
-						points
-					})
-					// minYOverall = Math.min(minYOverall, ...points)
-					maxYOverall = Math.max(maxYOverall, ...points)
-					points = points.slice(minXIndex, maxXIndex + 1)
-					timelineWindowGraphs.push({
-						id,
-						points
-					})
-					// minY = Math.min(minY, ...points)
-					maxY = Math.max(maxY, ...points)
-				}
-				// Set canvas `viewBox`.
-				// (add some side padding so that it doesn't trim the graphs on their sides)
-				canvas.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
-				// Calculate grid lines' coordinates.
-				const minY_ = 0
-				const maxY_ = getLowerSiblingDivisibleBy(maxY, 10)
-				const yAxisScale = (maxY - minY) / (maxY_ - minY)
-				const yAxisTickMarks = divideInterval(minY_, maxY_)
-				// Draw grid lines.
-				for (const y of yAxisTickMarks) {
-					canvas.appendChild(createGridLine(y, minX, maxX, minY, maxY))
-				}
-				// Trim X axis.
-				const _x = xScaled.slice()
-				const _minX = _x[0]
-				const _maxX = _x[_x.length - 1]
-				const trimLeftRatio = (minX - _minX) / (_x[1] - _minX)
-				const trimRightRatio = (_maxX - maxX) / (_maxX - _x[_x.length - 2])
-				_x[0] = minX
-				_x[_x.length - 1] = maxX
-				// Draw graphs.
-				for (const { id, points } of timelineWindowGraphs) {
-					const graph = document.createElement('polyline')
-					graph.setAttribute('stroke', data.colors[id])
-					const _y = points.slice()
-					const _minY = _y[0]
-					const _maxY = _y[_y.length - 1]
-					_y[0] = _minY + (_y[1] - _minY) * trimLeftRatio
-					_y[_y.length - 1] = _maxY - (_maxY - _y[_y.length - 2]) * trimRightRatio
-					graph.setAttribute('points', commaJoin(_x, _y.map(y => maxY - yScale * y)).join(' '))
-					graph.classList.add('chartogram__graph')
-					canvas.appendChild(graph)
-				}
-				// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
-				// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
-				canvas.innerHTML += ''
-				// Draw gauges.
-				drawGauges(x[0], x[x.length - 1], minY_, maxY_, yAxisScale)
-				// Draw timeline graph.
-				timelineWindowMinY = minY
-				timelineWindowMaxY = maxY
-				timelineWindowMinX = minX
-				timelineWindowMaxX = maxX
-				timelineWindowXScaled = xScaled
-				if (redrawTimeline) {
-					drawTimeline(data, graphsAll, xScaledAll, minXOverall, maxXOverall, minY, maxYOverall)
-				}
-			}
-
-			// function animateScale(scale) {
-			// 	console.log(scale)
-			// 	animateScaleTo = scale
-			// 	animateScaleStartedAt = Date.now()
-			// 	previousYScale = yScale
-			// 	requestAnimationFrame(animateScaleTick)
-			// }
-
-			// function animateScaleTick() {
-			// 	const elapsed = Date.now() - animateScaleStartedAt
-			// 	yScale = previousYScale + (animateScaleTo - previousYScale) * elapsed / 300
-			// 	drawGraphs(true)
-			// 	if (elapsed < 300) {
-			// 		requestAnimationFrame(animateScaleTick)
-			// 	}
-			// }
-
-			function createGridLine(y, minX, maxX, minY, maxY) {
-				const line = document.createElement('line')
-				line.classList.add('chartogram__grid-line')
-				line.setAttribute('x1', minX)
-				line.setAttribute('x2', maxX)
-				line.setAttribute('y1', (maxY - minY) - y)
-				line.setAttribute('y2', (maxY - minY) - y)
-				return line
-			}
-
-			function drawGauges(minX, maxX, minY, maxY, yAxisScale) {
-				clearElement(xAxis)
-				clearElement(yAxis)
-				drawGauge(xAxis, minX, maxX, (timestamp) => {
-					const date = new Date(timestamp)
-					return `${MONTHS[date.getMonth()]} ${date.getDate()}`
-				})
-				drawGauge(yAxis, minY, maxY)
-				yAxis.style.height = `${100 / yAxisScale}%`
-			}
-
-			function drawTimeline(data, graphs, x, minX, maxX, minY, maxY) {
-				clearElement(timelineCanvas)
-				// Set canvas `viewBox`.
-				timelineCanvas.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
-				for (const { id, points } of graphs) {
-					const graph = document.createElement('polyline')
-					graph.setAttribute('stroke', data.colors[id])
-					graph.setAttribute('points', commaJoin(x, points.map(y => (maxY - minY) - y)).join(' '))
-					graph.classList.add('chartogram__graph')
-					timelineCanvas.appendChild(graph)
-				}
-				// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
-				// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
-				timelineCanvas.innerHTML += ''
-			}
-
-			function createGraphToggler(id, data) {
-				const toggler = document.createElement('button')
-				toggler.setAttribute('type', 'button')
-				toggler.classList.add('chartogram__chart-toggler')
-            toggler.classList.add('chartogram__chart-toggler--on')
-				toggler.classList.add('reset-button')
-				// Add check.
-				const xmlns = 'http://www.w3.org/2000/svg'
-            const check = document.createElementNS(xmlns, 'svg')
-            check.setAttributeNS(null, 'viewBox', '0 0 19 19')
-            check.classList.add('chartogram__chart-toggler-check')
-            // Add background circle.
-            const backgroundCircle = document.createElementNS(xmlns, 'circle')
-            backgroundCircle.setAttribute('cx', '9.5')
-            backgroundCircle.setAttribute('cy', '9.5')
-            backgroundCircle.setAttribute('r', '9.5')
-            backgroundCircle.setAttribute('fill', data.colors[id])
-            check.appendChild(backgroundCircle)
-            // Add check circle.
-            const checkCircle = document.createElementNS(xmlns, 'circle')
-            checkCircle.setAttribute('cx', '9.5')
-            checkCircle.setAttribute('cy', '9.5')
-            checkCircle.setAttribute('r', '8')
-            checkCircle.classList.add('chartogram__chart-toggler-check-circle')
-            check.appendChild(checkCircle)
-            // Add check mark.
-            const checkMark = document.createElementNS(xmlns, 'path')
-            checkMark.setAttribute('d', 'M13.64 4.94l-6.2 6.34-1.69-1.9c-.73-.63-1.89.1-1.36 1.06l2 3.38c.3.43 1.04.85 1.78 0 .32-.42 6.31-7.93 6.31-7.93.74-.84-.2-1.58-.84-.95z')
-            checkMark.setAttribute('fill', 'white')
-            checkMark.classList.add('chartogram__chart-toggler-check-mark')
-            check.appendChild(checkMark)
-				// Add checkmark.
-				toggler.appendChild(check)
-				// Add graph name.
-				toggler.appendChild(document.createTextNode(data.names[id]))
-				// On click.
-				toggler.addEventListener('click', () => {
-					const show = showGraphs[id] === false ? true : false
-					// Won't allow hiding all graphs.
-					if (!show) {
-						const graphsShown = Object.keys(data.names).filter(id => showGraphs[id] !== false).length
-						if (graphsShown === 1) {
-							return
-						}
-					}
-					// showGraphsNext = { ...showGraphs }
-					// showGraphsNext[id] = show
-					// const maxYNext = getMaxY(timelineWindowGraphs.filter(_ => showGraphsNext[_.id] !== false))
-					// const scale = timelineWindowMaxY / maxYNext
-					// if (scale !== 1) {
-					// 	animateScale(scale)
-					// }
-					showGraphs[id] = show
-					drawGraphs(true)
-					toggler.classList.toggle('chartogram__chart-toggler--on')
-				})
-				return toggler
-			}
-
-			function getMaxY(graphs) {
-				let maxY = 0
-				for (const graph of graphs) {
-					maxY = Math.max(maxY, ...graph.points)
-				}
-				return maxY
-			}
-
-			function setUpTimelineWindowHandle(side) {
-				const handle = side === 'left' ? timelineWindowLeftHandle : timelineWindowRightHandle
-				let handleWidth = parseFloat(getComputedStyle(timelineWindow).borderLeftWidth)
-				let timelineCoordinates
-				let minX
-				let maxX
-				let deltaX
-				let startedX
-				function onDrag(x) {
-					x = x - deltaX
-					x = Math.max(Math.min(x, maxX), minX)
-					x = (x - timelineCoordinates.x) / timelineCoordinates.width
-					if (side === 'left') {
-						timelineWindowFrom = x
-					} else {
-						timelineWindowTo = x
-					}
-					updateTimelineWindow()
-				}
-				function onDragStart(x) {
-					timelineCoordinates = timeline.getBoundingClientRect()
-					const timelineWindowCoordinates = timelineWindow.getBoundingClientRect()
-					if (side === 'left') {
-						minX = timelineCoordinates.x
-						maxX = timelineWindowCoordinates.x + timelineWindowCoordinates.width - 2 * handleWidth
-						deltaX = x - timelineWindowCoordinates.x
-					} else {
-						minX = timelineWindowCoordinates.x + 2 * handleWidth
-						maxX = timelineCoordinates.x + timelineCoordinates.width
-						deltaX = x - (timelineWindowCoordinates.x + timelineWindowCoordinates.width)
-					}
-				}
-				return setUpDrag(handle, onDragStart, onDrag)
-			}
-
-			function setUpTimelineWindow() {
-				let timelineCoordinates
-				let timelineWindowCoordinates
-				let minX
-				let maxX
-				let innerX
-				function onDrag(x) {
-					x = x - innerX
-					x = Math.max(Math.min(x, maxX), minX)
-					x = (x - timelineCoordinates.x) / timelineCoordinates.width
-					timelineWindowFrom = x
-					timelineWindowTo = x + timelineWindowCoordinates.width / timelineCoordinates.width
-					updateTimelineWindow()
-				}
-				function onDragStart(x) {
-					timelineCoordinates = timeline.getBoundingClientRect()
-					timelineWindowCoordinates = timelineWindow.getBoundingClientRect()
-					innerX = x - timelineWindowCoordinates.x
-					minX = timelineCoordinates.x
-					maxX = timelineCoordinates.x + (timelineCoordinates.width - timelineWindowCoordinates.width)
-				}
-				return setUpDrag(timelineWindowDrag, onDragStart, onDrag)
-			}
-
-			function setUpDrag(element, onDragStart, onDrag) {
-				function onTouchMove(event) {
-					onDrag(
-						event.changedTouches[0].clientX,
-						event.changedTouches[0].clientY
-					)
-				}
-				function onPointerMove(event) {
-					onDrag(event.clientX, event.clientY)
-				}
-				function onDragStop() {
-					window.removeEventListener('pointermove', onPointerMove)
-					window.removeEventListener('touchmove', onTouchMove)
-					window.removeEventListener('pointerup', onDragStop)
-					window.removeEventListener('pointercancel', onDragStop)
-					window.removeEventListener('touchend', onDragStop)
-					window.removeEventListener('touchcancel', onDragStop)
-				}
-				function onTouchStart(event) {
-					// Ignore multitouch.
-					if (event.touches.length > 1) {
-						// Reset.
-						return onDragStop()
-					}
-					onDragStart(
-						event.changedTouches[0].clientX,
-						event.changedTouches[0].clientY
-					)
-					window.addEventListener('touchmove', onTouchMove)
-					window.addEventListener('touchend', onDragStop)
-					window.addEventListener('touchcancel', onDragStop)
-				}
-				// Safari doesn't support pointer events.
-				// https://caniuse.com/#feat=pointer
-				element.addEventListener('touchstart', onTouchStart)
-				function onPointerDown(event) {
-					onDragStart(event.clientX, event.clientY)
-					window.addEventListener('pointermove', onPointerMove)
-					window.addEventListener('pointerup', onDragStop)
-					window.addEventListener('pointercancel', onDragStop)
-				}
-				element.addEventListener('pointerdown', onPointerDown)
-				return () => {
-					onDragStop()
-					element.removeEventListener(onPointerDown)
-					element.removeEventListener(onTouchStart)
-				}
-			}
-
-			function setTimelineWindowLeft(x) {
-				timelineOverlayLeft.style.right = `${100 * (1 - x)}%`
-				timelineWindow.style.left = `${100 * x}%`
-			}
-
-			function setTimelineWindowRight(x) {
-				timelineOverlayRight.style.left = `${100 * x}%`
-				timelineWindow.style.right = `${100 * (1 - x)}%`
-			}
-
-			function updateTimelineWindow() {
-				setTimelineWindowLeft(timelineWindowFrom)
-				setTimelineWindowRight(timelineWindowTo)
-				drawGraphs(false)
-			}
 
 			function setUpDatasetSelector() {
 				const datasetSelector = document.getElementById('dataset-selector')
@@ -1150,234 +680,752 @@
 				}
 				datasetSelector.addEventListener('change', () => {
 					selectedDatasetId = datasetSelector.value
-					displayGraphs()
+					drawChartogram()
 				})
 			}
 
 			function setUpNightModeSwitch() {
+				const nightModeSwitch = document.querySelector('#night-mode-switch')
 				function setText() {
 					nightModeSwitch.textContent = `Switch to ${nightMode ? 'Day' : 'Night'} Mode`
 				}
+				let nightMode = false
 				nightModeSwitch.addEventListener('click', () => {
 					nightMode = !nightMode
-					document.body.classList.toggle('body--night-mode')
-					document.querySelector('.chartogram').classList.toggle('chartogram--night-mode')
-					clearElement(nightModeSwitch)
+					document.body.classList.toggle('night-mode')
+					chartogramNode.classList.toggle('chartogram--night-mode')
 					setText()
 				})
 				setText()
 			}
 
-			function setUpCanvas() {
-				let canvasDimensions
-				let isIndexInBounds
-				function onTrack(screenX) {
-					const xScreenRatio = (screenX - canvasDimensions.x) / canvasDimensions.width
-					let x = timelineWindowMinX + xScreenRatio * (timelineWindowMaxX - timelineWindowMinX)
-					let xHigherIndex = timelineWindowXScaled.findIndex(_ => _ >= x)
-					let xLowerIndex = xHigherIndex - 1
-					if (!isIndexInBounds(xHigherIndex)) {
-						xHigherIndex = -1
+			function chartogram(rootNode, data, title = 'Title', options = {}) {
+				// clearElement(rootNode)
+				rootNode.innerHTML = `
+					<header class="chartogram__header">
+						<h1 class="chartogram__title">${title}</h1>
+					</header>
+					<div class="chartogram__plan-with-axes">
+						<div class="chartogram__plan">
+							<div class="chartogram__top-border"></div>
+							<div class="chartogram__canvas-wrapper">
+								<svg class="chartogram__canvas" preserveAspectRatio="none"></svg>
+								<div class="chartogram__x"></div>
+								<div class="chartogram__y-wrapper">
+									<div class="chartogram__y"></div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="chartogram__timeline">
+						<div class="chartogram__timeline-canvas-padding">
+							<svg class="chartogram__timeline-canvas" preserveAspectRatio="none"></svg>
+						</div>
+						<div class="chartogram__timeline-overlay-left"></div>
+						<div class="chartogram__timeline-overlay-right"></div>
+						<div class="chartogram__timeline-window">
+							<button type="button" class="chartogram__reset-button chartogram__timeline-window__drag"></button>
+							<button type="button" class="chartogram__reset-button chartogram__timeline-window__left-handle"></button>
+							<button type="button" class="chartogram__reset-button chartogram__timeline-window__right-handle"></button>
+						</div>
+					</div>
+					<div class="chartogram__chart-togglers"></div>
+				`
+
+				rootNode.classList.add('chartogram')
+
+				const GAUGE_TICK_MARKS_COUNT = options.gaugeMarkTicksCount || 6
+				const TIMELINE_WINDOW_SIZE = options.timelineWindowSize || 40
+
+				const MONTHS = options.months || [
+					'Jan',
+					'Feb',
+					'Mar',
+					'Apr',
+					'May',
+					'Jun',
+					'Jul',
+					'Aug',
+					'Sep',
+					'Oct',
+					'Nov',
+					'Dec'
+				]
+
+				const WEEKDAYS = options.weekdays || [
+					'Sun',
+					'Mon',
+					'Tue',
+					'Wed',
+					'Thu',
+					'Fri',
+					'Sat'
+				]
+
+				const tooltipContainer = document.querySelector('.chartogram__plan')
+				const canvas = document.querySelector('.chartogram__canvas')
+				const canvasWrapper = document.querySelector('.chartogram__canvas-wrapper')
+				const xAxis = document.querySelector('.chartogram__x')
+				const yAxis = document.querySelector('.chartogram__y')
+				const timeline = document.querySelector('.chartogram__timeline')
+				const timelineOverlayLeft = document.querySelector('.chartogram__timeline-overlay-left')
+				const timelineWindowLeftHandle = document.querySelector('.chartogram__timeline-window__left-handle')
+				const timelineWindow = document.querySelector('.chartogram__timeline-window')
+				const timelineWindowDrag = document.querySelector('.chartogram__timeline-window__drag')
+				const timelineWindowRightHandle = document.querySelector('.chartogram__timeline-window__right-handle')
+				const timelineOverlayRight = document.querySelector('.chartogram__timeline-overlay-right')
+				const timelineCanvas = document.querySelector('.chartogram__timeline-canvas')
+
+				let timelineWindowFrom
+				let timelineWindowTo
+				let showGraphs
+				let showGraphsNext
+				let timelineWindowGraphs
+				let timelineWindowMinX
+				let timelineWindowMaxX
+				let timelineWindowMinY
+				let timelineWindowMaxY
+				let shiftX
+				let timelineWindowXScaled
+				let tooltip
+				let tooltipDate
+				let tooltipValues
+				let tooltipForX
+				let tooltipPoints
+				let tooltipLine
+
+				// A stub for possible animations.
+				let yScale = 1
+
+				setUpTimelineWindowHandle('left')
+				setUpTimelineWindowHandle('right')
+				setUpTimelineWindow()
+
+				displayGraphs()
+				setUpCanvas()
+
+				function clearElement(element) {
+					while(element.firstChild) {
+						element.removeChild(element.firstChild)
 					}
-					if (!isIndexInBounds(xLowerIndex)) {
-						xLowerIndex = -1
-					}
-					if (xHigherIndex < 0) {
-						if (xLowerIndex < 0) {
-							return removeTooltip()
-						} else {
-							x = timelineWindowXScaled[xLowerIndex]
+				}
+
+				function commaJoin(a, b) {
+					return a.map((ai, i) => `${ai},${b[i]}`)
+				}
+
+				function getLowerSiblingDivisibleBy(n, divider) {
+					while (true) {
+						if (n < divider) {
+							return divider
 						}
+						if (n % divider === 0) {
+							return n
+						}
+						n--
+					}
+				}
+
+				function divideInterval(min, max) {
+					const points = new Array(GAUGE_TICK_MARKS_COUNT)
+					let i = 0
+					while (i < GAUGE_TICK_MARKS_COUNT) {
+						points[i] = min + i * (max - min) / (GAUGE_TICK_MARKS_COUNT - 1)
+						i++
+					}
+					return points
+				}
+
+				function drawGauge(element, min, max, transform) {
+					let i = 0
+					while (i < GAUGE_TICK_MARKS_COUNT) {
+						const tickMark = document.createElement('div')
+						let value = min + i * (max - min) / (GAUGE_TICK_MARKS_COUNT - 1)
+						if (transform) {
+							value = transform(value)
+						}
+						tickMark.appendChild(document.createTextNode(value))
+						element.appendChild(tickMark)
+						i++
+					}
+				}
+
+				function displayGraphs() {
+					showGraphs = {}
+					for (const line of data.lines) {
+						showGraphs[line.id] = true
+					}
+					showGraphsNext = undefined
+					if (data.x.points.length > TIMELINE_WINDOW_SIZE) {
+						const xMin = data.x.points[0]
+						const xMax = data.x.points[data.x.points.length - 1]
+						const xFrom = data.x.points[data.x.points.length - TIMELINE_WINDOW_SIZE]
+						timelineWindowFrom = (xFrom - xMin) / (xMax - xMin)
 					} else {
-						if (xLowerIndex < 0) {
-							x = timelineWindowXScaled[xHigherIndex]
+						timelineWindowFrom = 0
+					}
+					timelineWindowTo = 1
+					updateTimelineWindow()
+					drawGraphs(true)
+					tooltipLine = undefined
+					// Add graph togglers.
+					const graphTogglers = document.querySelector('.chartogram__chart-togglers')
+					clearElement(graphTogglers)
+					for (const line of data.lines) {
+						graphTogglers.appendChild(createGraphToggler(line))
+					}
+				}
+
+				function drawGraphs(redrawTimeline) {
+					const x = data.x.points
+					// Chrome can't handle timestamps in milliseconds for point coordinates (draws nothing).
+					// Reducing timestamps to lower numbers to work around that bug.
+					shiftX = x[0]
+					const xScaledAll = x.map(_ => (_ - shiftX) / 1000)
+					// Clear canvas.
+					clearElement(canvas)
+					// Calculate bounds.
+					const minXOverall = xScaledAll[0]
+					const maxXOverall = xScaledAll[xScaledAll.length - 1]
+					const deltaX = maxXOverall - minXOverall
+					const minX = minXOverall + timelineWindowFrom * deltaX
+					const maxX = maxXOverall - (1 - timelineWindowTo) * deltaX
+					let minXIndex = xScaledAll.findIndex(x => x > minX) - 1
+					if (minXIndex < 0) {
+						minXIndex = 0
+					}
+					let maxXIndex = xScaledAll.findIndex(x => x > maxX)
+					if (maxXIndex < 0) {
+						maxXIndex = xScaledAll.length - 1
+					}
+					const xScaled = xScaledAll.slice(minXIndex, maxXIndex + 1)
+					// let minY = Infinity
+					// let minYOverall = Infinity
+					// Min Y is always 0 by design.
+					const minY = 0
+					let maxY = 0
+					let maxYOverall = 0
+					timelineWindowGraphs = []
+					const graphsAll = []
+					for (const line of data.lines) {
+						if (!showGraphs[line.id]) {
+							continue
+						}
+						graphsAll.push(line)
+						// minYOverall = Math.min(minYOverall, ...line.points)
+						maxYOverall = Math.max(maxYOverall, ...line.points)
+						const points = line.points.slice(minXIndex, maxXIndex + 1)
+						timelineWindowGraphs.push({
+							...line,
+							points
+						})
+						// minY = Math.min(minY, ...points)
+						maxY = Math.max(maxY, ...points)
+					}
+					// Set canvas `viewBox`.
+					// (add some side padding so that it doesn't trim the graphs on their sides)
+					canvas.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
+					// Calculate grid lines' coordinates.
+					const minY_ = 0
+					const maxY_ = getLowerSiblingDivisibleBy(maxY, 10)
+					const yAxisScale = (maxY - minY) / (maxY_ - minY)
+					const yAxisTickMarks = divideInterval(minY_, maxY_)
+					// Draw grid lines.
+					for (const y of yAxisTickMarks) {
+						canvas.appendChild(createGridLine(y, minX, maxX, minY, maxY))
+					}
+					// Trim X axis.
+					const _x = xScaled.slice()
+					const _minX = _x[0]
+					const _maxX = _x[_x.length - 1]
+					const trimLeftRatio = (minX - _minX) / (_x[1] - _minX)
+					const trimRightRatio = (_maxX - maxX) / (_maxX - _x[_x.length - 2])
+					_x[0] = minX
+					_x[_x.length - 1] = maxX
+					// Draw graphs.
+					for (const { id, color, points } of timelineWindowGraphs) {
+						const graph = document.createElement('polyline')
+						graph.setAttribute('stroke', color)
+						const _y = points.slice()
+						const _minY = _y[0]
+						const _maxY = _y[_y.length - 1]
+						_y[0] = _minY + (_y[1] - _minY) * trimLeftRatio
+						_y[_y.length - 1] = _maxY - (_maxY - _y[_y.length - 2]) * trimRightRatio
+						graph.setAttribute('points', commaJoin(_x, _y.map(y => maxY - yScale * y)).join(' '))
+						graph.classList.add('chartogram__graph')
+						canvas.appendChild(graph)
+					}
+					// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
+					// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
+					canvas.innerHTML += ''
+					// Draw gauges.
+					drawGauges(x[0], x[x.length - 1], minY_, maxY_, yAxisScale)
+					// Draw timeline graph.
+					timelineWindowMinY = minY
+					timelineWindowMaxY = maxY
+					timelineWindowMinX = minX
+					timelineWindowMaxX = maxX
+					timelineWindowXScaled = xScaled
+					if (redrawTimeline) {
+						drawTimeline(graphsAll, xScaledAll, minXOverall, maxXOverall, minY, maxYOverall)
+					}
+				}
+
+				// function animateScale(scale) {
+				// 	console.log(scale)
+				// 	animateScaleTo = scale
+				// 	animateScaleStartedAt = Date.now()
+				// 	previousYScale = yScale
+				// 	requestAnimationFrame(animateScaleTick)
+				// }
+
+				// function animateScaleTick() {
+				// 	const elapsed = Date.now() - animateScaleStartedAt
+				// 	yScale = previousYScale + (animateScaleTo - previousYScale) * elapsed / 300
+				// 	drawGraphs(true)
+				// 	if (elapsed < 300) {
+				// 		requestAnimationFrame(animateScaleTick)
+				// 	}
+				// }
+
+				function createGridLine(y, minX, maxX, minY, maxY) {
+					const line = document.createElement('line')
+					line.classList.add('chartogram__grid-line')
+					line.setAttribute('x1', minX)
+					line.setAttribute('x2', maxX)
+					line.setAttribute('y1', (maxY - minY) - y)
+					line.setAttribute('y2', (maxY - minY) - y)
+					return line
+				}
+
+				function drawGauges(minX, maxX, minY, maxY, yAxisScale) {
+					clearElement(xAxis)
+					clearElement(yAxis)
+					drawGauge(xAxis, minX, maxX, (timestamp) => {
+						const date = new Date(timestamp)
+						return `${MONTHS[date.getMonth()]} ${date.getDate()}`
+					})
+					drawGauge(yAxis, minY, maxY)
+					yAxis.style.height = `${100 / yAxisScale}%`
+				}
+
+				function drawTimeline(graphs, x, minX, maxX, minY, maxY) {
+					clearElement(timelineCanvas)
+					// Set canvas `viewBox`.
+					timelineCanvas.setAttribute('viewBox', `${minX} ${minY} ${maxX - minX} ${maxY - minY}`)
+					for (const { id, color, points } of graphs) {
+						const graph = document.createElement('polyline')
+						graph.setAttribute('stroke', color)
+						graph.setAttribute('points', commaJoin(x, points.map(y => (maxY - minY) - y)).join(' '))
+						graph.classList.add('chartogram__graph')
+						timelineCanvas.appendChild(graph)
+					}
+					// A workaround to fix WebKit bug when it's not re-rendering the <svg/>.
+					// https://stackoverflow.com/questions/30905493/how-to-force-webkit-to-update-svg-use-elements-after-changes-to-original
+					timelineCanvas.innerHTML += ''
+				}
+
+				function createGraphToggler({ id, name, color }) {
+					const toggler = document.createElement('button')
+					toggler.setAttribute('type', 'button')
+					toggler.classList.add('chartogram__chart-toggler')
+	            toggler.classList.add('chartogram__chart-toggler--on')
+					toggler.classList.add('chartogram__reset-button')
+					// Add check.
+					const xmlns = 'http://www.w3.org/2000/svg'
+	            const check = document.createElementNS(xmlns, 'svg')
+	            check.setAttributeNS(null, 'viewBox', '0 0 19 19')
+	            check.classList.add('chartogram__chart-toggler-check')
+	            // Add background circle.
+	            const backgroundCircle = document.createElementNS(xmlns, 'circle')
+	            backgroundCircle.setAttribute('cx', '9.5')
+	            backgroundCircle.setAttribute('cy', '9.5')
+	            backgroundCircle.setAttribute('r', '9.5')
+	            backgroundCircle.setAttribute('fill', color)
+	            check.appendChild(backgroundCircle)
+	            // Add check circle.
+	            const checkCircle = document.createElementNS(xmlns, 'circle')
+	            checkCircle.setAttribute('cx', '9.5')
+	            checkCircle.setAttribute('cy', '9.5')
+	            checkCircle.setAttribute('r', '8')
+	            checkCircle.classList.add('chartogram__chart-toggler-check-circle')
+	            check.appendChild(checkCircle)
+	            // Add check mark.
+	            const checkMark = document.createElementNS(xmlns, 'path')
+	            checkMark.setAttribute('d', 'M13.64 4.94l-6.2 6.34-1.69-1.9c-.73-.63-1.89.1-1.36 1.06l2 3.38c.3.43 1.04.85 1.78 0 .32-.42 6.31-7.93 6.31-7.93.74-.84-.2-1.58-.84-.95z')
+	            checkMark.setAttribute('fill', 'white')
+	            checkMark.classList.add('chartogram__chart-toggler-check-mark')
+	            check.appendChild(checkMark)
+					// Add checkmark.
+					toggler.appendChild(check)
+					// Add graph name.
+					toggler.appendChild(document.createTextNode(name))
+					// On click.
+					toggler.addEventListener('click', () => {
+						const show = !showGraphs[id]
+						// Won't allow hiding all graphs.
+						if (!show) {
+							const graphsShown = Object.keys(showGraphs).filter(id => showGraphs[id] !== false).length
+							if (graphsShown === 1) {
+								return
+							}
+						}
+						// showGraphsNext = { ...showGraphs }
+						// showGraphsNext[id] = show
+						// const maxYNext = getMaxY(timelineWindowGraphs.filter(_ => showGraphsNext[_.id]))
+						// const scale = timelineWindowMaxY / maxYNext
+						// if (scale !== 1) {
+						// 	animateScale(scale)
+						// }
+						showGraphs[id] = show
+						drawGraphs(true)
+						toggler.classList.toggle('chartogram__chart-toggler--on')
+					})
+					return toggler
+				}
+
+				function getMaxY(graphs) {
+					let maxY = 0
+					for (const graph of graphs) {
+						maxY = Math.max(maxY, ...graph.points)
+					}
+					return maxY
+				}
+
+				function setUpTimelineWindowHandle(side) {
+					const handle = side === 'left' ? timelineWindowLeftHandle : timelineWindowRightHandle
+					let handleWidth = parseFloat(getComputedStyle(timelineWindow).borderLeftWidth)
+					let timelineCoordinates
+					let minX
+					let maxX
+					let deltaX
+					let startedX
+					function onDrag(x) {
+						x = x - deltaX
+						x = Math.max(Math.min(x, maxX), minX)
+						x = (x - timelineCoordinates.x) / timelineCoordinates.width
+						if (side === 'left') {
+							timelineWindowFrom = x
 						} else {
-							const xLower = timelineWindowXScaled[xLowerIndex]
-							const xHigher = timelineWindowXScaled[xHigherIndex]
-							const deltaLower = x - xLower
-							const deltaHigher = xHigher - x
-							x = deltaLower > deltaHigher ? xHigher : xLower
+							timelineWindowTo = x
+						}
+						updateTimelineWindow()
+					}
+					function onDragStart(x) {
+						timelineCoordinates = timeline.getBoundingClientRect()
+						const timelineWindowCoordinates = timelineWindow.getBoundingClientRect()
+						if (side === 'left') {
+							minX = timelineCoordinates.x
+							maxX = timelineWindowCoordinates.x + timelineWindowCoordinates.width - 2 * handleWidth
+							deltaX = x - timelineWindowCoordinates.x
+						} else {
+							minX = timelineWindowCoordinates.x + 2 * handleWidth
+							maxX = timelineCoordinates.x + timelineCoordinates.width
+							deltaX = x - (timelineWindowCoordinates.x + timelineWindowCoordinates.width)
 						}
 					}
-					if (x !== tooltipForX) {
-						tooltipForX = x
-						if (!tooltip) {
-							addTooltip()
+					return setUpDrag(handle, onDragStart, onDrag)
+				}
+
+				function setUpTimelineWindow() {
+					let timelineCoordinates
+					let timelineWindowCoordinates
+					let minX
+					let maxX
+					let innerX
+					function onDrag(x) {
+						x = x - innerX
+						x = Math.max(Math.min(x, maxX), minX)
+						x = (x - timelineCoordinates.x) / timelineCoordinates.width
+						timelineWindowFrom = x
+						timelineWindowTo = x + timelineWindowCoordinates.width / timelineCoordinates.width
+						updateTimelineWindow()
+					}
+					function onDragStart(x) {
+						timelineCoordinates = timeline.getBoundingClientRect()
+						timelineWindowCoordinates = timelineWindow.getBoundingClientRect()
+						innerX = x - timelineWindowCoordinates.x
+						minX = timelineCoordinates.x
+						maxX = timelineCoordinates.x + (timelineCoordinates.width - timelineWindowCoordinates.width)
+					}
+					return setUpDrag(timelineWindowDrag, onDragStart, onDrag)
+				}
+
+				function setUpDrag(element, onDragStart, onDrag) {
+					function onTouchMove(event) {
+						onDrag(
+							event.changedTouches[0].clientX,
+							event.changedTouches[0].clientY
+						)
+					}
+					function onPointerMove(event) {
+						onDrag(event.clientX, event.clientY)
+					}
+					function onDragStop() {
+						window.removeEventListener('pointermove', onPointerMove)
+						window.removeEventListener('touchmove', onTouchMove)
+						window.removeEventListener('pointerup', onDragStop)
+						window.removeEventListener('pointercancel', onDragStop)
+						window.removeEventListener('touchend', onDragStop)
+						window.removeEventListener('touchcancel', onDragStop)
+					}
+					function onTouchStart(event) {
+						// Ignore multitouch.
+						if (event.touches.length > 1) {
+							// Reset.
+							return onDragStop()
 						}
-						const date = new Date(x * 1000 + shiftX)
-						tooltipDate.textContent = `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`
-						const xIndex = timelineWindowXScaled.indexOf(x)
-						let i = 0
-						while (2 * i < tooltipValues.childNodes.length) {
-							tooltipValues.childNodes[2 * i].textContent = timelineWindowGraphs[i].points[xIndex]
-							tooltipValues.childNodes[2 * i + 1].textContent = DATA[selectedDatasetId].names[DATA[selectedDatasetId].columns[i + 1][0]]
-							i++
-						}
-						const xRatio = (x - timelineWindowMinX) / (timelineWindowMaxX - timelineWindowMinX)
-						tooltip.style.left = `${xRatio * 100}%`
-						updateTooltipPoints(xIndex, xRatio)
-						updateTooltipLine(x)
+						onDragStart(
+							event.changedTouches[0].clientX,
+							event.changedTouches[0].clientY
+						)
+						window.addEventListener('touchmove', onTouchMove)
+						window.addEventListener('touchend', onDragStop)
+						window.addEventListener('touchcancel', onDragStop)
+					}
+					// Safari doesn't support pointer events.
+					// https://caniuse.com/#feat=pointer
+					element.addEventListener('touchstart', onTouchStart)
+					function onPointerDown(event) {
+						onDragStart(event.clientX, event.clientY)
+						window.addEventListener('pointermove', onPointerMove)
+						window.addEventListener('pointerup', onDragStop)
+						window.addEventListener('pointercancel', onDragStop)
+					}
+					element.addEventListener('pointerdown', onPointerDown)
+					return () => {
+						onDragStop()
+						element.removeEventListener(onPointerDown)
+						element.removeEventListener(onTouchStart)
 					}
 				}
-				function onTrackStart() {
-					canvasDimensions = canvas.getBoundingClientRect()
-					isIndexInBounds = (index) => {
-						if (index < 0) {
-							return false
+
+				function setTimelineWindowLeft(x) {
+					timelineOverlayLeft.style.right = `${100 * (1 - x)}%`
+					timelineWindow.style.left = `${100 * x}%`
+				}
+
+				function setTimelineWindowRight(x) {
+					timelineOverlayRight.style.left = `${100 * x}%`
+					timelineWindow.style.right = `${100 * (1 - x)}%`
+				}
+
+				function updateTimelineWindow() {
+					setTimelineWindowLeft(timelineWindowFrom)
+					setTimelineWindowRight(timelineWindowTo)
+					drawGraphs(false)
+				}
+
+				function setUpCanvas() {
+					let canvasDimensions
+					let isIndexInBounds
+					function onTrack(screenX) {
+						const xScreenRatio = (screenX - canvasDimensions.x) / canvasDimensions.width
+						let x = timelineWindowMinX + xScreenRatio * (timelineWindowMaxX - timelineWindowMinX)
+						let xHigherIndex = timelineWindowXScaled.findIndex(_ => _ >= x)
+						let xLowerIndex = xHigherIndex - 1
+						if (!isIndexInBounds(xHigherIndex)) {
+							xHigherIndex = -1
 						}
-						return timelineWindowXScaled[index] >= timelineWindowMinX &&
-								timelineWindowXScaled[index] <= timelineWindowMaxX
+						if (!isIndexInBounds(xLowerIndex)) {
+							xLowerIndex = -1
+						}
+						if (xHigherIndex < 0) {
+							if (xLowerIndex < 0) {
+								return removeTooltip()
+							} else {
+								x = timelineWindowXScaled[xLowerIndex]
+							}
+						} else {
+							if (xLowerIndex < 0) {
+								x = timelineWindowXScaled[xHigherIndex]
+							} else {
+								const xLower = timelineWindowXScaled[xLowerIndex]
+								const xHigher = timelineWindowXScaled[xHigherIndex]
+								const deltaLower = x - xLower
+								const deltaHigher = xHigher - x
+								x = deltaLower > deltaHigher ? xHigher : xLower
+							}
+						}
+						if (x !== tooltipForX) {
+							tooltipForX = x
+							if (!tooltip) {
+								addTooltip()
+							}
+							const date = new Date(x * 1000 + shiftX)
+							tooltipDate.textContent = `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`
+							const xIndex = timelineWindowXScaled.indexOf(x)
+							let i = 0
+							while (2 * i < tooltipValues.childNodes.length) {
+								tooltipValues.childNodes[2 * i].textContent = timelineWindowGraphs[i].points[xIndex]
+								tooltipValues.childNodes[2 * i + 1].textContent = data.lines[i].name
+								i++
+							}
+							const xRatio = (x - timelineWindowMinX) / (timelineWindowMaxX - timelineWindowMinX)
+							tooltip.style.left = `${xRatio * 100}%`
+							updateTooltipPoints(xIndex, xRatio)
+							updateTooltipLine(x)
+						}
 					}
-				}
-				function onTouchStart(event) {
-					// Ignore multitouch.
-					if (event.touches.length > 1) {
-						// Reset.
-						return onTrackStop()
+					function onTrackStart() {
+						canvasDimensions = canvas.getBoundingClientRect()
+						isIndexInBounds = (index) => {
+							if (index < 0) {
+								return false
+							}
+							return timelineWindowXScaled[index] >= timelineWindowMinX &&
+									timelineWindowXScaled[index] <= timelineWindowMaxX
+						}
 					}
-					onTrackStart()
-					canvas.addEventListener('touchend', onTrackStop)
-					canvas.addEventListener('touchmove', onTouchMove)
-					canvas.addEventListener('touchend', onTrackStop)
-					canvas.addEventListener('touchcancel', onTrackStop)
-					onTouchMove(event)
-				}
-				// Safari doesn't support pointer events.
-				// https://caniuse.com/#feat=pointer
-				canvas.addEventListener('touchstart', onTouchStart)
-				function onTouchMove(event) {
-					const x = event.changedTouches[0].clientX
-					const y = event.changedTouches[0].clientY
-					// Emulate 'pointerleave' behavior.
-					if (x < canvasDimensions.x ||
-						x > canvasDimensions.x + canvasDimensions.width ||
-						y < canvasDimensions.y ||
-						y > canvasDimensions.y + canvasDimensions.height) {
+					function onTouchStart(event) {
+						// Ignore multitouch.
+						if (event.touches.length > 1) {
+							// Reset.
+							return onTrackStop()
+						}
+						onTrackStart()
+						canvas.addEventListener('touchend', onTrackStop)
+						canvas.addEventListener('touchmove', onTouchMove)
+						canvas.addEventListener('touchend', onTrackStop)
+						canvas.addEventListener('touchcancel', onTrackStop)
+						onTouchMove(event)
+					}
+					// Safari doesn't support pointer events.
+					// https://caniuse.com/#feat=pointer
+					canvas.addEventListener('touchstart', onTouchStart)
+					function onTouchMove(event) {
+						const x = event.changedTouches[0].clientX
+						const y = event.changedTouches[0].clientY
+						// Emulate 'pointerleave' behavior.
+						if (x < canvasDimensions.x ||
+							x > canvasDimensions.x + canvasDimensions.width ||
+							y < canvasDimensions.y ||
+							y > canvasDimensions.y + canvasDimensions.height) {
+							onTrackStop()
+						} else {
+							onTrack(x, y)
+						}
+					}
+					function onPointerMove(event) {
+						onTrack(event.clientX, event.clientY)
+					}
+					function onTrackStop() {
+						canvas.removeEventListener('pointermove', onPointerMove)
+						canvas.removeEventListener('pointerleave', onTrackStop)
+						canvas.removeEventListener('pointercancel', onTrackStop)
+						canvas.removeEventListener('touchmove', onTouchMove)
+						canvas.removeEventListener('touchend', onTrackStop)
+						canvas.removeEventListener('touchcancel', onTrackStop)
+						removeTooltip()
+					}
+					function onPointerEnter() {
+						onTrackStart()
+						canvas.addEventListener('pointermove', onPointerMove)
+						canvas.addEventListener('pointerleave', onTrackStop)
+						canvas.addEventListener('pointercancel', onTrackStop)
+					}
+					canvas.addEventListener('pointerenter', onPointerEnter)
+					return () => {
 						onTrackStop()
-					} else {
-						onTrack(x, y)
+						canvas.removeEventListener(onPointerEnter)
+						canvas.removeEventListener(onTouchStart)
 					}
 				}
-				function onPointerMove(event) {
-					onTrack(event.clientX, event.clientY)
-				}
-				function onTrackStop() {
-					canvas.removeEventListener('pointermove', onPointerMove)
-					canvas.removeEventListener('pointerleave', onTrackStop)
-					canvas.removeEventListener('pointercancel', onTrackStop)
-					canvas.removeEventListener('touchmove', onTouchMove)
-					canvas.removeEventListener('touchend', onTrackStop)
-					canvas.removeEventListener('touchcancel', onTrackStop)
-					removeTooltip()
-				}
-				function onPointerEnter() {
-					onTrackStart()
-					canvas.addEventListener('pointermove', onPointerMove)
-					canvas.addEventListener('pointerleave', onTrackStop)
-					canvas.addEventListener('pointercancel', onTrackStop)
-				}
-				canvas.addEventListener('pointerenter', onPointerEnter)
-				return () => {
-					onTrackStop()
-					canvas.removeEventListener(onPointerEnter)
-					canvas.removeEventListener(onTouchStart)
-				}
-			}
 
-			function addTooltip() {
-				// Create tooltip.
-				tooltip = document.createElement('div')
-				tooltip.classList.add('chartogram__tooltip')
-				tooltipContainer.appendChild(tooltip)
-				// Add tooltip title.
-				tooltipDate = document.createElement('h1')
-				tooltipDate.classList.add('chartogram__tooltip-header')
-				tooltip.appendChild(tooltipDate)
-				// Add graph values.
-				tooltipValues = document.createElement('dl')
-				tooltipValues.classList.add('chartogram__tooltip-values')
-				tooltip.appendChild(tooltipValues)
-				// Add graph values.
-				const data = DATA[selectedDatasetId]
-				for (const id of Object.keys(data.types)) {
-					if (data.types[id] === 'line' && showGraphs[id] !== false) {
-						// Add graph value.
-						const tooltipValue = document.createElement('dt')
-						tooltipValue.style.color = data.colors[id]
-						tooltipValues.appendChild(tooltipValue)
-						// Add graph name.
-						const tooltipName = document.createElement('dd')
-						tooltipName.style.color = data.colors[id]
-						tooltipValues.appendChild(tooltipName)
+				function addTooltip() {
+					// Create tooltip.
+					tooltip = document.createElement('div')
+					tooltip.classList.add('chartogram__tooltip')
+					tooltipContainer.appendChild(tooltip)
+					// Add tooltip title.
+					tooltipDate = document.createElement('h1')
+					tooltipDate.classList.add('chartogram__tooltip-header')
+					tooltip.appendChild(tooltipDate)
+					// Add graph values.
+					tooltipValues = document.createElement('dl')
+					tooltipValues.classList.add('chartogram__tooltip-values')
+					tooltip.appendChild(tooltipValues)
+					// Add graph values.
+					for (const line of data.lines) {
+						if (showGraphs[line.id]) {
+							// Add graph value.
+							const tooltipValue = document.createElement('dt')
+							tooltipValue.style.color = line.color
+							tooltipValues.appendChild(tooltipValue)
+							// Add graph name.
+							const tooltipName = document.createElement('dd')
+							tooltipName.style.color = line.color
+							tooltipValues.appendChild(tooltipName)
+						}
 					}
 				}
-			}
 
-			function removeTooltip() {
-				if (tooltip) {
-					tooltipForX = undefined
-					tooltipContainer.removeChild(tooltip)
-					tooltip = undefined
-					removeTooltipPoints()
-					removeTooltipLine()
+				function removeTooltip() {
+					if (tooltip) {
+						tooltipForX = undefined
+						tooltipContainer.removeChild(tooltip)
+						tooltip = undefined
+						removeTooltipPoints()
+						removeTooltipLine()
+					}
 				}
-			}
 
-			function addTooltipLine() {
-				const xmlns = 'http://www.w3.org/2000/svg'
-				tooltipLine = document.createElementNS(xmlns, 'line')
-				tooltipLine.setAttributeNS(null, 'class', 'chartogram__tooltip-line')
-				canvas.appendChild(tooltipLine)
-			}
-
-			function removeTooltipLine() {
-				canvas.removeChild(tooltipLine)
-				tooltipLine = undefined
-			}
-
-			function addTooltipPoints() {
-				tooltipPoints = []
-				let i = 0
-				while (i < timelineWindowGraphs.length) {
-					const point = document.createElement('div')
-					point.classList.add('chartogram__tooltip-point')
-					point.style.color = DATA[selectedDatasetId].colors[timelineWindowGraphs[i].id]
-					tooltipPoints.push(point)
-					canvasWrapper.appendChild(point)
-					i++
+				function addTooltipLine() {
+					const xmlns = 'http://www.w3.org/2000/svg'
+					tooltipLine = document.createElementNS(xmlns, 'line')
+					tooltipLine.setAttributeNS(null, 'class', 'chartogram__tooltip-line')
+					canvas.appendChild(tooltipLine)
 				}
-			}
 
-			function removeTooltipPoints() {
-            for (const point of tooltipPoints) {
-            	canvasWrapper.removeChild(point)
-            }
-            tooltipPoints = undefined
-			}
-
-			function updateTooltipLine(x) {
-				if (!tooltipLine) {
-					addTooltipLine()
+				function removeTooltipLine() {
+					canvas.removeChild(tooltipLine)
+					tooltipLine = undefined
 				}
-            tooltipLine.setAttributeNS(null, 'x1', x)
-            tooltipLine.setAttributeNS(null, 'x2', x)
-            tooltipLine.setAttributeNS(null, 'y1', timelineWindowMinY)
-            tooltipLine.setAttributeNS(null, 'y2', timelineWindowMaxY)
-			}
 
-			function updateTooltipPoints(xIndex, xRatio) {
-				if (!tooltipPoints) {
-					addTooltipPoints()
+				function addTooltipPoints() {
+					tooltipPoints = []
+					let i = 0
+					while (i < timelineWindowGraphs.length) {
+						const point = document.createElement('div')
+						point.classList.add('chartogram__tooltip-point')
+						point.style.color = timelineWindowGraphs[i].color
+						tooltipPoints.push(point)
+						canvasWrapper.appendChild(point)
+						i++
+					}
 				}
-				let i = 0
-				while (i < tooltipPoints.length) {
-					const point = tooltipPoints[i]
-					point.style.left = `${xRatio * 100}%`
-					const y = timelineWindowGraphs[i].points[xIndex]
-					const yRatio = y / timelineWindowMaxY
-					point.style.bottom = `${yRatio * 100}%`
-					i++
-            }
+
+				function removeTooltipPoints() {
+	            for (const point of tooltipPoints) {
+	            	canvasWrapper.removeChild(point)
+	            }
+	            tooltipPoints = undefined
+				}
+
+				function updateTooltipLine(x) {
+					if (!tooltipLine) {
+						addTooltipLine()
+					}
+	            tooltipLine.setAttributeNS(null, 'x1', x)
+	            tooltipLine.setAttributeNS(null, 'x2', x)
+	            tooltipLine.setAttributeNS(null, 'y1', timelineWindowMinY)
+	            tooltipLine.setAttributeNS(null, 'y2', timelineWindowMaxY)
+				}
+
+				function updateTooltipPoints(xIndex, xRatio) {
+					if (!tooltipPoints) {
+						addTooltipPoints()
+					}
+					let i = 0
+					while (i < tooltipPoints.length) {
+						const point = tooltipPoints[i]
+						point.style.left = `${xRatio * 100}%`
+						const y = timelineWindowGraphs[i].points[xIndex]
+						const yRatio = y / timelineWindowMaxY
+						point.style.bottom = `${yRatio * 100}%`
+						i++
+					}
+				}
 			}
 		</script>
 	</body>
