@@ -1228,20 +1228,24 @@
 					}
 				}
 
-				// function animateScale(scale) {
-				// 	console.log(scale)
-				// 	animateScaleTo = scale
-				// 	animateScaleStartedAt = Date.now()
-				// 	previousYScale = yScale
-				// 	requestAnimationFrame(animateScaleTick)
+				// this.animateScale = (scale) => {
+				// 	this.setState({
+				// 		yScaleFrom: this.state.yScale,
+				// 		yScale,
+				// 		yScaleTransitionStartedAt: Date.now()
+				// 	}) = scale
+				// 	requestAnimationFrame(this.transitionScaleTick)
 				// }
 
-				// function animateScaleTick() {
-				// 	const elapsed = Date.now() - animateScaleStartedAt
-				// 	yScale = previousYScale + (animateScaleTo - previousYScale) * elapsed / 300
-				// 	drawGraphs(true)
-				// 	if (elapsed < 300) {
-				// 		requestAnimationFrame(animateScaleTick)
+				// this.transitionScaleTick = () => {
+				// 	const { yScaleTransitionStartedAt, yScaleFrom, yScale } = this.state
+				// 	const elapsed = Date.now() - yScaleTransitionStartedAt
+				// 	const ratio = Math.min(elapsed / 300, 1)
+				// 	this.setState({
+				// 		yScaleTransitioned: yScaleFrom + (yScale - yScaleFrom) * ratio
+				// 	})
+				// 	if (ratio < 1) {
+				// 		requestAnimationFrame(this.transitionScaleTick)
 				// 	}
 				// }
 
@@ -1361,7 +1365,7 @@
 					const onDrag = (x) => {
 						x -= deltaX
 						x = Math.max(Math.min(x, maxX), minX)
-						const ratio = (x - timelineCoordinates.x) / timelineCoordinates.width
+						const ratio = (x - timelineCoordinates.left) / timelineCoordinates.width
 						if (side === 'left') {
 							this.updateBounds(ratio, this.state.toRatio)
 						} else {
@@ -1372,13 +1376,13 @@
 						timelineCoordinates = this.timeline.getBoundingClientRect()
 						const timelineWindowCoordinates = this.timelineWindow.getBoundingClientRect()
 						if (side === 'left') {
-							minX = timelineCoordinates.x
-							maxX = timelineWindowCoordinates.x + timelineWindowCoordinates.width - 2 * handleWidth
-							deltaX = x - timelineWindowCoordinates.x
+							minX = timelineCoordinates.left
+							maxX = timelineWindowCoordinates.left + timelineWindowCoordinates.width - 2 * handleWidth
+							deltaX = x - timelineWindowCoordinates.left
 						} else {
-							minX = timelineWindowCoordinates.x + 2 * handleWidth
-							maxX = timelineCoordinates.x + timelineCoordinates.width
-							deltaX = x - (timelineWindowCoordinates.x + timelineWindowCoordinates.width)
+							minX = timelineWindowCoordinates.left + 2 * handleWidth
+							maxX = timelineCoordinates.left + timelineCoordinates.width
+							deltaX = x - (timelineWindowCoordinates.left + timelineWindowCoordinates.width)
 						}
 					}
 					return setUpDrag(handle, onDragStart, onDrag)
@@ -1393,15 +1397,15 @@
 					const onDrag = (x) => {
 						x -= innerX
 						x = Math.max(Math.min(x, maxX), minX)
-						const ratio = (x - timelineCoordinates.x) / timelineCoordinates.width
+						const ratio = (x - timelineCoordinates.left) / timelineCoordinates.width
 						this.updateBounds(ratio, ratio + timelineWindowCoordinates.width / timelineCoordinates.width)
 					}
 					const onDragStart = (x) => {
 						timelineCoordinates = this.timeline.getBoundingClientRect()
 						timelineWindowCoordinates = this.timelineWindow.getBoundingClientRect()
-						innerX = x - timelineWindowCoordinates.x
-						minX = timelineCoordinates.x
-						maxX = timelineCoordinates.x + (timelineCoordinates.width - timelineWindowCoordinates.width)
+						innerX = x - timelineWindowCoordinates.left
+						minX = timelineCoordinates.left
+						maxX = timelineCoordinates.left + (timelineCoordinates.width - timelineWindowCoordinates.width)
 					}
 					return setUpDrag(this.timelineWindowDrag, onDragStart, onDrag)
 				}
@@ -1422,7 +1426,7 @@
 					let isIndexInBounds
 					const onTrack = (screenX) => {
 						const { minX, maxX, xPoints, y } = this.state
-						const xScreenRatio = (screenX - canvasDimensions.x) / canvasDimensions.width
+						const xScreenRatio = (screenX - canvasDimensions.left) / canvasDimensions.width
 						const xPoint = minX + xScreenRatio * (maxX - minX)
 						let xHigherIndex = xPoints.findIndex(_ => _ >= xPoint)
 						let xLowerIndex = xHigherIndex - 1
@@ -1499,10 +1503,10 @@
 						const x = event.changedTouches[0].clientX
 						const y = event.changedTouches[0].clientY
 						// Emulate 'pointerleave' behavior.
-						if (x < canvasDimensions.x ||
-							x > canvasDimensions.x + canvasDimensions.width ||
-							y < canvasDimensions.y ||
-							y > canvasDimensions.y + canvasDimensions.height) {
+						if (x < canvasDimensions.left ||
+							x > canvasDimensions.left + canvasDimensions.width ||
+							y < canvasDimensions.top ||
+							y > canvasDimensions.top + canvasDimensions.height) {
 							onTrackStop()
 						} else {
 							onTrack(x, y)
@@ -1623,12 +1627,16 @@
 						this.addTooltipPoints()
 					}
 					let i = 0
-					while (i < this.tooltipPoints.length) {
-						const point = this.tooltipPoints[i]
-						const _y = y[i].points[xIndex]
-						const yRatio = _y / maxY
-						point.style.left = `${xRatio * 100}%`
-						point.style.bottom = `${yRatio * 100}%`
+					let j = 0
+					while (i < y.length) {
+						if (y[i].isShown) {
+							const point = this.tooltipPoints[j]
+							const _y = y[i].points[xIndex]
+							const yRatio = _y / maxY
+							point.style.left = `${xRatio * 100}%`
+							point.style.bottom = `${yRatio * 100}%`
+							j++
+						}
 						i++
 					}
 				}
